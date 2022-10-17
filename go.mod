@@ -7,6 +7,7 @@ require (
 	gioui.org/x v0.0.0-20220919203322-ce11c01a7117
 	github.com/brutella/dnssd v1.2.4
 	github.com/hkontrol/hkontroller v0.0.0-20221012211959-460c677992c3
+	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 )
 
 require (
@@ -19,7 +20,6 @@ require (
 	github.com/tadglines/go-pkgs v0.0.0-20210623144937-b983b20f54f9 // indirect
 	github.com/xiam/to v0.0.0-20200126224905-d60d31e03561 // indirect
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
-	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/image v0.0.0-20220722155232-062f8c9fd539 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
