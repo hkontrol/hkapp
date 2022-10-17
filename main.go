@@ -3,6 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"hkapp/appmanager"
+	page "hkapp/pages"
+	"hkapp/pages/accessories"
+	"hkapp/pages/discover"
+	"os"
+	"path"
+
 	"gioui.org/app"
 	"gioui.org/font/gofont"
 	"gioui.org/io/system"
@@ -11,11 +18,6 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/appmanager"
-	page "hkapp/pages"
-	"hkapp/pages/accessories"
-	"hkapp/pages/discover"
-	"os"
 )
 
 type (
@@ -33,7 +35,16 @@ type App struct {
 func main() {
 	flag.Parse()
 
-	st := hkontroller.NewFsStore("./.store")
+	dd, err := app.DataDir()
+	if err != nil {
+		panic(err)
+	}
+
+	storePath := path.Join(dd, "hkstore")
+
+	fmt.Println("store path: ", storePath)
+
+	st := hkontroller.NewFsStore(storePath)
 
 	hk, _ := hkontroller.NewController(
 		st,
