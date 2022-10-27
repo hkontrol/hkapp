@@ -134,6 +134,6 @@ func (a *AppManager) UnpairDevice(dev *hkontroller.Device) error {
 	defer func() {
 		a.closedEvent <- dev
 	}()
-	err := a.controller.UnpairDevice(dev)
+	err := a.controller.UnpairDevice(dev.Id)
 	return err
 }

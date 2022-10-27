@@ -68,8 +68,8 @@ func main() {
 	router := page.NewRouter()
 	discoverPage := discover.New(router, mgr)
 	accessoriesPage := accessories.New(router, mgr)
-	router.Register(0, discoverPage)
-	router.Register(1, accessoriesPage)
+	router.Register(0, accessoriesPage)
+	router.Register(1, discoverPage)
 	myapp.router = router
 
 	go func() {

@@ -68,7 +68,7 @@ func (p *Page) Overflow() []component.OverflowAction {
 
 func (p *Page) NavItem() component.NavItem {
 	return component.NavItem{
-		Name: "helloriend",
+		Name: "pairings",
 		Icon: icon.HomeIcon,
 	}
 }

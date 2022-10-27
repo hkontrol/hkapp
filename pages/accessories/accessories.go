@@ -8,11 +8,10 @@ import (
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
 	"github.com/hkontrol/hkontroller"
-	alo "hkapp/applayout"
 	"hkapp/appmanager"
-
 	"hkapp/icon"
 	page "hkapp/pages"
+	"hkapp/widgets/accessory_card"
 )
 
 type (
@@ -30,8 +29,16 @@ type DeviceAccPair struct {
 type Page struct {
 	widget.List
 
-	accs         []DeviceAccPair
-	accsSwitches []widget.Bool
+	accs []DeviceAccPair
+
+	// clickable elements for cards
+	clickables []widget.Clickable
+
+	// for opened accessory
+	closeSelectedAcc widget.Clickable
+
+	// index of selected accessory
+	selectedAcc int
 
 	*page.Router
 	*appmanager.AppManager
@@ -40,8 +47,9 @@ type Page struct {
 // New constructs a Page with the provided router.
 func New(router *page.Router, manager *appmanager.AppManager) *Page {
 	return &Page{
-		Router:     router,
-		AppManager: manager,
+		Router:      router,
+		AppManager:  manager,
+		selectedAcc: -1,
 	}
 }
 
@@ -61,7 +69,7 @@ func (p *Page) Update() {
 			p.accs = append(p.accs, DeviceAccPair{device: c, accessory: a})
 		}
 	}
-	p.accsSwitches = make([]widget.Bool, len(p.accs))
+	p.clickables = make([]widget.Clickable, len(p.accs))
 }
 
 func (p *Page) Actions() []component.AppBarAction {
@@ -81,87 +89,70 @@ func (p *Page) NavItem() component.NavItem {
 
 func (p *Page) Layout(gtx C, th *material.Theme) D {
 
-	for i := range p.accsSwitches {
-		if p.accsSwitches[i].Changed() {
-			val := p.accsSwitches[i].Value
+	for i := range p.clickables {
+		for p.clickables[i].Clicked() {
+			fmt.Println("clicked ", i)
+			p.selectedAcc = i
 			accdev := p.accs[i]
 			acc := accdev.accessory
-			dev := accdev.device
+			_ = acc
 
-			var on *hkontroller.CharacteristicDescription
-			lb := acc.GetService(hkontroller.SType_LightBulb)
-			sw := acc.GetService(hkontroller.SType_Switch)
-			if lb != nil {
-				on = lb.GetCharacteristic(hkontroller.CType_On)
-			} else if sw != nil {
-				on = sw.GetCharacteristic(hkontroller.CType_On)
-			}
-			err := dev.PutCharacteristic(acc.Id, on.Iid, val)
-			if err == nil {
-				on.Value = val
-			}
+			// TODO: init variables(Clickable, Bool, Sliders, Etc) for services
+			//       init widgets for services
 		}
 	}
+	for p.closeSelectedAcc.Clicked() {
+		fmt.Println("close selected acc")
+		p.selectedAcc = -1
+	}
 
-	return layout.Flex{
-		Axis: layout.Vertical,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return (layout.Inset{Left: unit.Dp(6)}).Layout(gtx,
-				func(gtx C) D {
-					p.List.Axis = layout.Vertical
-					listStyle := material.List(th, &p.List)
+	if p.selectedAcc < 0 {
+		// all accessories
+		return layout.Flex{
+			Axis: layout.Vertical,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return (layout.Inset{Left: unit.Dp(6)}).Layout(gtx,
+					func(gtx C) D {
+						p.List.Axis = layout.Vertical
 
-					return listStyle.Layout(gtx, len(p.accs), func(gtx C, i int) D {
+						listStyle := material.List(th, &p.List)
 
-						accdev := p.accs[i]
-						acc := accdev.accessory
-						sr := acc.GetService(hkontroller.SType_AccessoryInfo)
-						if sr == nil {
-							return D{}
-						}
-						ch := sr.GetCharacteristic(hkontroller.CType_Name)
-						if ch == nil {
-							return D{}
-						}
+						return listStyle.Layout(gtx, len(p.accs), func(gtx C, i int) D {
 
-						name, ok := ch.Value.(string)
-						if !ok {
-							name = "undefined"
-						}
+							accdev := p.accs[i]
+							acc := accdev.accessory
 
-						var on *hkontroller.CharacteristicDescription
-						lb := acc.GetService(hkontroller.SType_LightBulb)
-						sw := acc.GetService(hkontroller.SType_Switch)
-						if lb != nil {
-							on = lb.GetCharacteristic(hkontroller.CType_On)
-						} else if sw != nil {
-							on = sw.GetCharacteristic(hkontroller.CType_On)
-						}
+							var children []layout.Widget
+							w := accessory_card.NewAccessoryCard(th, &p.clickables[i], acc).Layout
+							children = append(children, w)
 
-						if on != nil {
+							var flexChildren []layout.FlexChild
+							for _, w := range children {
+								flexChildren = append(flexChildren, layout.Rigid(w))
+							}
+
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return alo.DetailRow{PrimaryWidth: 0.75}.Layout(gtx,
-										material.Body1(th, name).Layout,
-										func(gtx C) D {
-											val, ok := on.Value.(bool)
-											if ok {
-												p.accsSwitches[i].Value = val
-											}
-											return material.Switch(th, &p.accsSwitches[i], name).Layout(gtx)
-										})
-								}),
+								flexChildren...,
 							)
-						}
-
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return material.Body1(th, name).Layout(gtx)
-							}),
-						)
+						})
 					})
-				})
-		}),
-	)
+			}))
+	} else {
+		// if accessory selected
+
+		// TODO
+		//      card or tab for each service
+
+		return layout.Flex{
+			Axis: layout.Vertical,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return material.Body1(th, "TODO services here").Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return material.Button(th, &p.closeSelectedAcc, "done").Layout(gtx)
+			}),
+		)
+	}
 }
