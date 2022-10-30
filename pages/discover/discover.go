@@ -28,7 +28,7 @@ type Page struct {
 	devs        []*hkontroller.Device
 	devClicks   []widget.Clickable
 	devSelected int
-	pinInput    widget.Editor
+	pinInput    component.TextField
 	btnPair     widget.Clickable
 	btnUnpair   widget.Clickable
 	btnVerify   widget.Clickable
@@ -143,7 +143,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 					return listStyle.Layout(gtx, len(p.devs), func(gtx C, i int) D {
 						labelStyle := material.Label(th, unit.Sp(20), p.devs[i].Id)
 						labelStyle.Font.Variant = "Mono"
-						if p.devSelected < 0 {
+						if p.devSelected < 0 || i != p.devSelected {
 							return material.Clickable(gtx, &p.devClicks[i], labelStyle.Layout)
 						} else {
 							if !p.devs[p.devSelected].IsPaired() && !p.devs[p.devSelected].IsVerified() {
@@ -152,7 +152,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 										return material.Clickable(gtx, &p.devClicks[i], labelStyle.Layout)
 									}),
 									layout.Rigid(func(gtx C) D {
-										return material.Editor(th, &p.pinInput, "enter pin here").Layout(gtx)
+										return p.pinInput.Layout(gtx, th, "pin")
 									}),
 									layout.Rigid(func(gtx C) D {
 										return material.Button(th, &p.btnPair, "pair").Layout(gtx)
