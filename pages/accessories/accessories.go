@@ -7,11 +7,11 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
-	"github.com/hkontrol/hkontroller"
 	"hkapp/appmanager"
 	"hkapp/icon"
 	page "hkapp/pages"
 	"hkapp/widgets/accessory_card"
+	"hkapp/widgets/accessory_page"
 )
 
 type (
@@ -19,17 +19,12 @@ type (
 	D = layout.Dimensions
 )
 
-type DeviceAccPair struct {
-	device    *hkontroller.Device
-	accessory *hkontroller.Accessory
-}
-
 // Page holds the state for a page demonstrating the features of
 // the NavDrawer component.
 type Page struct {
 	widget.List
 
-	accs []DeviceAccPair
+	accs []appmanager.DeviceAccPair
 
 	// clickable elements for cards
 	clickables []widget.Clickable
@@ -38,7 +33,10 @@ type Page struct {
 	closeSelectedAcc widget.Clickable
 
 	// index of selected accessory
-	selectedAcc int
+	selectedAccIdx  int
+	selectedAccPage interface {
+		Layout(C) D
+	}
 
 	*page.Router
 	*appmanager.AppManager
@@ -47,9 +45,9 @@ type Page struct {
 // New constructs a Page with the provided router.
 func New(router *page.Router, manager *appmanager.AppManager) *Page {
 	return &Page{
-		Router:      router,
-		AppManager:  manager,
-		selectedAcc: -1,
+		Router:         router,
+		AppManager:     manager,
+		selectedAccIdx: -1,
 	}
 }
 
@@ -57,7 +55,7 @@ var _ page.Page = &Page{}
 
 func (p *Page) Update() {
 	connections := p.AppManager.GetVerifiedDevices()
-	p.accs = make([]DeviceAccPair, 0, len(connections))
+	p.accs = make([]appmanager.DeviceAccPair, 0, len(connections))
 	for _, c := range connections {
 		err := c.DiscoverAccessories()
 		if err != nil {
@@ -66,7 +64,7 @@ func (p *Page) Update() {
 		}
 		accs := c.GetAccessories()
 		for _, a := range accs {
-			p.accs = append(p.accs, DeviceAccPair{device: c, accessory: a})
+			p.accs = append(p.accs, appmanager.DeviceAccPair{Device: c, Accessory: a})
 		}
 	}
 	p.clickables = make([]widget.Clickable, len(p.accs))
@@ -92,21 +90,21 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	for i := range p.clickables {
 		for p.clickables[i].Clicked() {
 			fmt.Println("clicked ", i)
-			p.selectedAcc = i
+			p.selectedAccIdx = i
 			accdev := p.accs[i]
-			acc := accdev.accessory
-			_ = acc
-
-			// TODO: init variables(Clickable, Bool, Sliders, Etc) for services
-			//       init widgets for services
+			acc := accdev.Accessory
+			dev := accdev.Device
+			// TODO replace
+			p.selectedAccPage = accessory_page.NewAccessoryPage(p.AppManager, acc, dev, th)
 		}
 	}
 	for p.closeSelectedAcc.Clicked() {
 		fmt.Println("close selected acc")
-		p.selectedAcc = -1
+		p.selectedAccIdx = -1
+		p.selectedAccPage = nil
 	}
 
-	if p.selectedAcc < 0 {
+	if p.selectedAccIdx < 0 {
 		// all accessories
 		return layout.Flex{
 			Axis: layout.Vertical,
@@ -121,7 +119,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 						return listStyle.Layout(gtx, len(p.accs), func(gtx C, i int) D {
 
 							accdev := p.accs[i]
-							acc := accdev.accessory
+							acc := accdev.Accessory
 
 							var children []layout.Widget
 							w := accessory_card.NewAccessoryCard(th, &p.clickables[i], acc).Layout
@@ -141,17 +139,18 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	} else {
 		// if accessory selected
 
-		// TODO
-		//      card or tab for each service
-
 		return layout.Flex{
 			Axis: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return material.Body1(th, "TODO services here").Layout(gtx)
+				return p.selectedAccPage.Layout(gtx)
 			}),
+			layout.Rigid(
+				// The height of the spacer is 25 Device independent pixels
+				layout.Spacer{Height: unit.Dp(25)}.Layout,
+			),
 			layout.Rigid(func(gtx C) D {
-				return material.Button(th, &p.closeSelectedAcc, "done").Layout(gtx)
+				return material.Button(th, &p.closeSelectedAcc, "close").Layout(gtx)
 			}),
 		)
 	}

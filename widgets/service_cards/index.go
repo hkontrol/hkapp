@@ -4,6 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
+	"hkapp/appmanager"
 )
 
 type (
@@ -11,7 +12,12 @@ type (
 	D = layout.Dimensions
 )
 
-func GetWidgetForService(acc *hkontroller.Accessory, s *hkontroller.ServiceDescription, th *material.Theme) layout.Widget {
+func GetWidgetForService(am *appmanager.AppManager,
+	acc *hkontroller.Accessory, dev *hkontroller.Device,
+	s *hkontroller.ServiceDescription, th *material.Theme,
+) (interface {
+	Layout(C) D
+}, error) {
 
 	label := ""
 	accInfo := acc.GetService(hkontroller.SType_AccessoryInfo)
@@ -27,10 +33,10 @@ func GetWidgetForService(acc *hkontroller.Accessory, s *hkontroller.ServiceDescr
 
 	switch s.Type {
 	case hkontroller.SType_LightBulb:
-		return NewLightBulb(acc.Id, label, th).Layout
+		return NewLightBulb(am, acc, dev, th)
 	case hkontroller.SType_Switch:
-		return NewSwitch(acc.Id, label, th).Layout
+		return NewSwitch(am, acc, dev, th)
 	default:
-		return material.Body2(th, label).Layout
+		return material.Body2(th, label), nil
 	}
 }

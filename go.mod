@@ -3,11 +3,11 @@ module hkapp
 go 1.19
 
 require (
-	gioui.org v0.0.0-20221011192757-dead6e007f04
-	gioui.org/x v0.0.0-20220919203322-ce11c01a7117
+	gioui.org v0.0.0-20221023001956-9f62230c380f
+	gioui.org/x v0.0.0-20221026194128-5b5772968c5c
 	github.com/brutella/dnssd v1.2.4
-	github.com/hkontrol/hkontroller v0.0.0-20221017194204-4562d0bac8c0
-	golang.org/x/exp/shiny v0.0.0-20221012211006-4de253d81b95
+	github.com/hkontrol/hkontroller v0.0.0-20221031023125-5acf72991637
+	golang.org/x/exp/shiny v0.0.0-20221028150844-83b7d23a625f
 )
 
 require (

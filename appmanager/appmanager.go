@@ -7,6 +7,11 @@ import (
 	"sync"
 )
 
+type DeviceAccPair struct {
+	Device    *hkontroller.Device
+	Accessory *hkontroller.Accessory
+}
+
 type AppManager struct {
 	controller *hkontroller.Controller
 	store      hkontroller.Store
