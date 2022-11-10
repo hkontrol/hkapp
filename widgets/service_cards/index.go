@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/appmanager"
+	"hkapp/application"
 )
 
 type (
@@ -12,7 +12,7 @@ type (
 	D = layout.Dimensions
 )
 
-func GetWidgetForService(am *appmanager.AppManager,
+func GetWidgetForService(app *application.App,
 	acc *hkontroller.Accessory, dev *hkontroller.Device,
 	s *hkontroller.ServiceDescription, th *material.Theme,
 ) (interface {
@@ -33,9 +33,9 @@ func GetWidgetForService(am *appmanager.AppManager,
 
 	switch s.Type {
 	case hkontroller.SType_LightBulb:
-		return NewLightBulb(am, acc, dev, th)
+		return NewLightBulb(app, acc, dev, th)
 	case hkontroller.SType_Switch:
-		return NewSwitch(am, acc, dev, th)
+		return NewSwitch(app, acc, dev, th)
 	default:
 		return material.Body2(th, label), nil
 	}

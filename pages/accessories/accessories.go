@@ -7,7 +7,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
-	"hkapp/appmanager"
+	"hkapp/application"
+	"hkapp/hkmanager"
 	"hkapp/icon"
 	page "hkapp/pages"
 	"hkapp/widgets/accessory_card"
@@ -24,7 +25,7 @@ type (
 type Page struct {
 	widget.List
 
-	accs []appmanager.DeviceAccPair
+	accs []hkmanager.DeviceAccPair
 
 	// clickable elements for cards
 	clickables []widget.Clickable
@@ -38,15 +39,13 @@ type Page struct {
 		Layout(C) D
 	}
 
-	*page.Router
-	*appmanager.AppManager
+	*application.App
 }
 
 // New constructs a Page with the provided router.
-func New(router *page.Router, manager *appmanager.AppManager) *Page {
+func New(app *application.App) *Page {
 	return &Page{
-		Router:         router,
-		AppManager:     manager,
+		App:            app,
 		selectedAccIdx: -1,
 	}
 }
@@ -54,8 +53,8 @@ func New(router *page.Router, manager *appmanager.AppManager) *Page {
 var _ page.Page = &Page{}
 
 func (p *Page) Update() {
-	connections := p.AppManager.GetVerifiedDevices()
-	p.accs = make([]appmanager.DeviceAccPair, 0, len(connections))
+	connections := p.App.Manager.GetVerifiedDevices()
+	p.accs = make([]hkmanager.DeviceAccPair, 0, len(connections))
 	for _, c := range connections {
 		err := c.DiscoverAccessories()
 		if err != nil {
@@ -64,7 +63,7 @@ func (p *Page) Update() {
 		}
 		accs := c.GetAccessories()
 		for _, a := range accs {
-			p.accs = append(p.accs, appmanager.DeviceAccPair{Device: c, Accessory: a})
+			p.accs = append(p.accs, hkmanager.DeviceAccPair{Device: c, Accessory: a})
 		}
 	}
 	p.clickables = make([]widget.Clickable, len(p.accs))
@@ -94,13 +93,18 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 			accdev := p.accs[i]
 			acc := accdev.Accessory
 			dev := accdev.Device
-			// TODO replace
-			p.selectedAccPage = accessory_page.NewAccessoryPage(p.AppManager, acc, dev, th)
+			p.selectedAccPage = accessory_page.NewAccessoryPage(p.App, acc, dev, th)
+			if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
+				ap.SubscribeToEvents()
+			}
 		}
 	}
 	for p.closeSelectedAcc.Clicked() {
 		fmt.Println("close selected acc")
 		p.selectedAccIdx = -1
+		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
+			ap.UnsubscribeFromEvents()
+		}
 		p.selectedAccPage = nil
 	}
 

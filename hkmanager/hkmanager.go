@@ -1,4 +1,4 @@
-package appmanager
+package hkmanager
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type DeviceAccPair struct {
 	Accessory *hkontroller.Accessory
 }
 
-type AppManager struct {
+type HomeKitManager struct {
 	controller *hkontroller.Controller
 	store      hkontroller.Store
 
@@ -25,8 +25,8 @@ type AppManager struct {
 	closedEvent   chan *hkontroller.Device
 }
 
-func NewAppManager(controller *hkontroller.Controller, store hkontroller.Store) *AppManager {
-	return &AppManager{
+func NewAppManager(controller *hkontroller.Controller, store hkontroller.Store) *HomeKitManager {
+	return &HomeKitManager{
 		controller:    controller,
 		store:         store,
 		discovered:    make(map[string]*hkontroller.Device),
@@ -37,7 +37,7 @@ func NewAppManager(controller *hkontroller.Controller, store hkontroller.Store) 
 	}
 }
 
-func (a *AppManager) StartDiscovering() {
+func (a *HomeKitManager) StartDiscovering() {
 	_ = a.controller.LoadPairings()
 	a.controller.StartDiscovering(
 		func(entry *dnssd.BrowseEntry, device *hkontroller.Device) {
@@ -65,19 +65,19 @@ func (a *AppManager) StartDiscovering() {
 	)
 }
 
-func (a *AppManager) DiscoverEvents() chan interface{} {
+func (a *HomeKitManager) DiscoverEvents() chan interface{} {
 	return a.discoverEvent
 }
 
-func (a *AppManager) VerifiedEvents() chan *hkontroller.Device {
+func (a *HomeKitManager) VerifiedEvents() chan *hkontroller.Device {
 	return a.verifiedEvent
 }
 
-func (a *AppManager) ClosedEvents() chan *hkontroller.Device {
+func (a *HomeKitManager) ClosedEvents() chan *hkontroller.Device {
 	return a.closedEvent
 }
 
-func (a *AppManager) GetDevices() []*hkontroller.Device {
+func (a *HomeKitManager) GetDevices() []*hkontroller.Device {
 	var res []*hkontroller.Device
 
 	a.mu.Lock()
@@ -93,7 +93,7 @@ func (a *AppManager) GetDevices() []*hkontroller.Device {
 	return res
 }
 
-func (a *AppManager) GetVerifiedDevices() []*hkontroller.Device {
+func (a *HomeKitManager) GetVerifiedDevices() []*hkontroller.Device {
 	var res []*hkontroller.Device
 
 	a.mu.Lock()
@@ -111,14 +111,14 @@ func (a *AppManager) GetVerifiedDevices() []*hkontroller.Device {
 	return res
 }
 
-func (a *AppManager) PairSetupAndVerify(devId string, pin string) error {
+func (a *HomeKitManager) PairSetupAndVerify(devId string, pin string) error {
 	err := a.controller.PairSetup(devId, pin)
 	if err != nil {
 		return err
 	}
 	return a.PairVerify(devId)
 }
-func (a *AppManager) PairVerify(devId string) error {
+func (a *HomeKitManager) PairVerify(devId string) error {
 	err := a.controller.PairVerify(devId)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func (a *AppManager) PairVerify(devId string) error {
 	return nil
 }
 
-func (a *AppManager) UnpairDevice(dev *hkontroller.Device) error {
+func (a *HomeKitManager) UnpairDevice(dev *hkontroller.Device) error {
 	defer func() {
 		a.closedEvent <- dev
 	}()

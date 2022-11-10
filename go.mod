@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	gioui.org v0.0.0-20221023001956-9f62230c380f
-	gioui.org/x v0.0.0-20221026194128-5b5772968c5c
+	gioui.org/x v0.0.0-20221103142138-d48590498bfc
 	github.com/brutella/dnssd v1.2.4
-	github.com/hkontrol/hkontroller v0.0.0-20221031023125-5acf72991637
-	golang.org/x/exp/shiny v0.0.0-20221028150844-83b7d23a625f
+	github.com/hkontrol/hkontroller v0.0.0-20221106062551-19297fea8402
+	golang.org/x/exp/shiny v0.0.0-20221106115401-f9659909a136
 )
 
 require (

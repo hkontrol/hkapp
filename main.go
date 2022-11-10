@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"hkapp/appmanager"
+	"hkapp/application"
+	"hkapp/hkmanager"
 	page "hkapp/pages"
 	"hkapp/pages/accessories"
 	"hkapp/pages/discover"
@@ -11,12 +12,8 @@ import (
 	"path"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
-	"gioui.org/io/system"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 )
 
@@ -24,13 +21,6 @@ type (
 	C = layout.Context
 	D = layout.Dimensions
 )
-
-type App struct {
-	manager    *appmanager.AppManager
-	controller *hkontroller.Controller
-	window     *app.Window
-	router     *page.Router
-}
 
 func main() {
 	flag.Parse()
@@ -52,28 +42,29 @@ func main() {
 	)
 	_ = hk.LoadPairings()
 
-	mgr := appmanager.NewAppManager(hk, st)
+	mgr := hkmanager.NewAppManager(hk, st)
 
 	w := app.NewWindow(
 		app.Title("hkontroller"),
 		app.Size(unit.Dp(400), unit.Dp(600)),
 	)
 
-	myapp := App{
-		manager:    mgr,
-		controller: hk,
-		window:     w,
+	myapp := &application.App{
+		Manager: mgr,
+		//controller: hk,
+		Window: w,
 	}
+	myapp.Window.Invalidate()
 
 	router := page.NewRouter()
-	discoverPage := discover.New(router, mgr)
-	accessoriesPage := accessories.New(router, mgr)
+	discoverPage := discover.New(myapp)
+	accessoriesPage := accessories.New(myapp)
 	router.Register(0, accessoriesPage)
 	router.Register(1, discoverPage)
-	myapp.router = router
+	myapp.Router = router
 
 	go func() {
-		if err := myapp.loop(); err != nil {
+		if err := myapp.Loop(); err != nil {
 			panic(err)
 		}
 		os.Exit(0)
@@ -106,26 +97,4 @@ func main() {
 	}()
 
 	app.Main()
-}
-
-func (a *App) loop() error {
-	return loop(a.window, a.router, a.manager)
-}
-
-func loop(w *app.Window, router *page.Router, mgr *appmanager.AppManager) error {
-	th := material.NewTheme(gofont.Collection())
-	var ops op.Ops
-	for {
-		select {
-		case e := <-w.Events():
-			switch e := e.(type) {
-			case system.DestroyEvent:
-				return e.Err
-			case system.FrameEvent:
-				gtx := layout.NewContext(&ops, e)
-				router.Layout(gtx, th)
-				e.Frame(gtx.Ops)
-			}
-		}
-	}
 }

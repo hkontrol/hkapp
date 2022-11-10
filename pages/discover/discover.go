@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/appmanager"
+	"hkapp/application"
 	"hkapp/icon"
 	page "hkapp/pages"
 )
@@ -34,15 +34,13 @@ type Page struct {
 	btnVerify   widget.Clickable
 	pairErr     error
 
-	*page.Router
-	*appmanager.AppManager
+	*application.App
 }
 
 // New constructs a Page with the provided router.
-func New(router *page.Router, app *appmanager.AppManager) *Page {
+func New(app *application.App) *Page {
 	return &Page{
-		Router:      router,
-		AppManager:  app,
+		App:         app,
 		devSelected: -1,
 	}
 }
@@ -79,7 +77,7 @@ const (
 )
 
 func (p *Page) Update() {
-	p.devs = p.AppManager.GetDevices()
+	p.devs = p.App.Manager.GetDevices()
 	p.devClicks = make([]widget.Clickable, len(p.devs))
 
 	for _, d := range p.devs {
@@ -109,9 +107,9 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		pin := p.pinInput.Text()
 		devId := p.devs[p.devSelected].Id
 		fmt.Println("btnPair: ", devId, pin)
-		err := p.AppManager.PairSetupAndVerify(devId, pin)
+		err := p.App.Manager.PairSetupAndVerify(devId, pin)
 		if err != nil {
-			_ = p.AppManager.UnpairDevice(p.devs[p.devSelected])
+			_ = p.App.Manager.UnpairDevice(p.devs[p.devSelected])
 		}
 		fmt.Println("pairErr: ", err)
 		p.Update()
@@ -119,15 +117,15 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	if p.btnUnpair.Clicked() {
 		dev := p.devs[p.devSelected]
 		fmt.Println("btnUnpair: ", dev.Id)
-		_ = p.AppManager.UnpairDevice(dev)
+		_ = p.App.Manager.UnpairDevice(dev)
 		p.Update()
 	}
 	if p.btnVerify.Clicked() {
 		dev := p.devs[p.devSelected]
 		fmt.Println("btnVerify: ", dev.Id)
-		err := p.AppManager.PairVerify(dev.Id)
+		err := p.App.Manager.PairVerify(dev.Id)
 		if err != nil {
-			_ = p.AppManager.UnpairDevice(dev)
+			_ = p.App.Manager.UnpairDevice(dev)
 		}
 		p.Update()
 	}

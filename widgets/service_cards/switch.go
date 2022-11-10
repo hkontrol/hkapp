@@ -7,7 +7,7 @@ import (
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"hkapp/applayout"
-	"hkapp/appmanager"
+	"hkapp/application"
 	"reflect"
 )
 
@@ -21,10 +21,11 @@ type Switch struct {
 
 	th *material.Theme
 
-	*appmanager.AppManager
+	*application.App
 }
 
-func NewSwitch(am *appmanager.AppManager, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) (*Switch, error) {
+func NewSwitch(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) (*Switch, error) {
+	s := &Switch{acc: acc, dev: dev, th: th, App: app}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {
@@ -38,6 +39,7 @@ func NewSwitch(am *appmanager.AppManager, acc *hkontroller.Accessory, dev *hkont
 	if !ok {
 		return nil, errors.New("cannot extract accessory name")
 	}
+	s.label = label
 
 	switchS := acc.GetService(hkontroller.SType_Switch)
 	if switchS == nil {
@@ -48,35 +50,67 @@ func NewSwitch(am *appmanager.AppManager, acc *hkontroller.Accessory, dev *hkont
 		return nil, errors.New("cannot find characteristic On")
 	}
 
-	var onValue bool
-	withValOnC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
-	if err == nil {
-		fmt.Println(withValOnC.Value, reflect.TypeOf(withValOnC.Value))
-		onValue, ok = withValOnC.Value.(bool)
+	convertOnValue := func(value interface{}, sw *Switch) {
+		onValue, ok := value.(bool)
 		if !ok {
 			var onValInt float64
-			onValInt, ok = withValOnC.Value.(float64)
+			onValInt, ok = value.(float64)
 			if ok {
 				onValue = onValInt > 0
 			}
 		}
+		sw.Bool = widget.Bool{Value: onValue}
+	}
+	withValOnC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
+	if err == nil {
+		fmt.Println(withValOnC.Value, reflect.TypeOf(withValOnC.Value))
+		convertOnValue(withValOnC.Value, s)
 	} else {
-		onValue, ok = onC.Value.(bool)
+		convertOnValue(onC.Value, s)
 	}
 	if !ok {
-		onValue = false
+		convertOnValue(false, s)
 	}
 
-	s := Switch{
-		acc: acc,
-		dev: dev,
+	return s, nil
+}
 
-		th:         th,
-		label:      label,
-		AppManager: am,
-		Bool:       widget.Bool{Value: onValue},
+func (s *Switch) SubscribeToEvents() {
+	convertOnValue := func(value interface{}, sw *Switch) {
+		onValue, ok := value.(bool)
+		if !ok {
+			var onValInt float64
+			onValInt, ok = value.(float64)
+			if ok {
+				onValue = onValInt > 0
+			}
+		}
+		sw.Bool = widget.Bool{Value: onValue}
 	}
-	return &s, nil
+	switchS := s.acc.GetService(hkontroller.SType_Switch)
+	if switchS == nil {
+		return
+	}
+	onC := switchS.GetCharacteristic(hkontroller.CType_On)
+	if onC == nil {
+		return
+	}
+
+	s.dev.SubscribeToEvents(s.acc.Id, onC.Iid, func(aid uint64, iid uint64, value interface{}) {
+		convertOnValue(value, s)
+		s.App.Window.Invalidate()
+	})
+}
+func (s *Switch) UnsubscribeFromEvents() {
+	switchS := s.acc.GetService(hkontroller.SType_Switch)
+	if switchS == nil {
+		return
+	}
+	onC := switchS.GetCharacteristic(hkontroller.CType_On)
+	if onC == nil {
+		return
+	}
+	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid)
 }
 
 func (s *Switch) OnBoolValueChanged() error {

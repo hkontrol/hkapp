@@ -5,7 +5,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/appmanager"
+	"hkapp/application"
 	"hkapp/widgets/service_cards"
 )
 
@@ -14,11 +14,16 @@ type (
 	D = layout.Dimensions
 )
 
+type evented interface {
+	SubscribeToEvents()
+	UnsubscribeFromEvents()
+}
+
 type AccessoryPage struct {
 	acc *hkontroller.Accessory
 	dev *hkontroller.Device
 
-	*material.Theme
+	th *material.Theme
 
 	widget.List
 
@@ -26,15 +31,16 @@ type AccessoryPage struct {
 		Layout(C) D
 	}
 
-	*appmanager.AppManager
+	*application.App
 }
 
-func NewAccessoryPage(am *appmanager.AppManager, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) *AccessoryPage {
+func NewAccessoryPage(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) *AccessoryPage {
 
 	ap := AccessoryPage{
-		acc:   acc,
-		dev:   dev,
-		Theme: th,
+		acc: acc,
+		dev: dev,
+		th:  th,
+		App: app,
 	}
 
 	ap.srvwidgets =
@@ -43,7 +49,7 @@ func NewAccessoryPage(am *appmanager.AppManager, acc *hkontroller.Accessory, dev
 		}, 0, len(acc.Ss))
 
 	for _, s := range acc.Ss {
-		w, err := service_cards.GetWidgetForService(am, acc, dev, s, th)
+		w, err := service_cards.GetWidgetForService(app, acc, dev, s, th)
 		if err != nil {
 			continue
 		}
@@ -56,8 +62,24 @@ func NewAccessoryPage(am *appmanager.AppManager, acc *hkontroller.Accessory, dev
 func (p *AccessoryPage) Layout(gtx C) D {
 	// here we loop through all the events associated with this button.
 	p.List.Axis = layout.Vertical
-	listStyle := material.List(p.Theme, &p.List)
+	listStyle := material.List(p.th, &p.List)
 	return listStyle.Layout(gtx, len(p.srvwidgets), func(gtx C, i int) D {
 		return p.srvwidgets[i].Layout(gtx)
 	})
+}
+
+func (p *AccessoryPage) SubscribeToEvents() {
+	for _, s := range p.srvwidgets {
+		if pp, ok := s.(evented); ok {
+			pp.SubscribeToEvents()
+		}
+	}
+}
+
+func (p *AccessoryPage) UnsubscribeFromEvents() {
+	for _, s := range p.srvwidgets {
+		if pp, ok := s.(evented); ok {
+			pp.UnsubscribeFromEvents()
+		}
+	}
 }
