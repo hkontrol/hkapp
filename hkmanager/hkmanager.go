@@ -84,7 +84,7 @@ func (a *HomeKitManager) GetDevices() []*hkontroller.Device {
 	defer a.mu.Unlock()
 
 	for _, d := range a.discovered {
-		dev := a.controller.GetPairedDevice(d.Id)
+		dev := a.controller.GetDevice(d.Id)
 		if dev != nil {
 			res = append(res, dev)
 		}
@@ -100,7 +100,7 @@ func (a *HomeKitManager) GetVerifiedDevices() []*hkontroller.Device {
 	defer a.mu.Unlock()
 
 	for _, d := range a.discovered {
-		dev := a.controller.GetPairedDevice(d.Id)
+		dev := a.controller.GetDevice(d.Id)
 		if dev != nil {
 			if dev.IsPaired() && dev.IsVerified() {
 				res = append(res, dev)
@@ -118,6 +118,7 @@ func (a *HomeKitManager) PairSetupAndVerify(devId string, pin string) error {
 	}
 	return a.PairVerify(devId)
 }
+
 func (a *HomeKitManager) PairVerify(devId string) error {
 	err := a.controller.PairVerify(devId)
 	if err != nil {
@@ -125,11 +126,11 @@ func (a *HomeKitManager) PairVerify(devId string) error {
 	}
 
 	go func() {
-		dev := a.controller.GetPairedDevice(devId)
+		dev := a.controller.GetDevice(devId)
 		if dev != nil {
 			err := dev.DiscoverAccessories()
 			fmt.Println("discover accs: ", err)
-			a.verifiedEvent <- a.controller.GetPairedDevice(devId)
+			a.verifiedEvent <- a.controller.GetDevice(devId)
 		}
 	}()
 	return nil
