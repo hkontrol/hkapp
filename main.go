@@ -71,27 +71,55 @@ func main() {
 	}()
 
 	go func() {
-		for _ = range mgr.DiscoverEvents() {
-			fmt.Println("discover event")
+		for dev := range mgr.EventDeviceDiscover() {
+			fmt.Println("On(discover): ", dev.Id)
+			discoverPage.Update()
+			w.Invalidate()
+			fmt.Println("on discover return from cb")
+		}
+	}()
+
+	go func() {
+		for dev := range mgr.EventDeviceLost() {
+			fmt.Println("On(lost): ", dev.Id)
+			accessoriesPage.Update()
 			discoverPage.Update()
 			w.Invalidate()
 		}
 	}()
 
 	go func() {
-		for _ = range mgr.VerifiedEvents() {
-			fmt.Println("verified event")
-			accessoriesPage.Update()
+		for dev := range mgr.EventDeviceVerified() {
+			fmt.Println("On(verified): ", dev.Id)
+
+			fmt.Println(dev.GetAccessories())
+			fmt.Println(len(dev.Accessories()))
+
+			go accessoriesPage.Update()
 			w.Invalidate()
 		}
 	}()
-	go func() {
-		for _ = range mgr.ClosedEvents() {
-			fmt.Println("closed event")
-			accessoriesPage.Update()
-			w.Invalidate()
-		}
-	}()
+
+	//mgr.On("close", func(e *emitter.Event) {
+	//	dev, ok := e.Args[0].(*hkontroller.Device)
+	//	if !ok {
+	//		return
+	//	}
+	//	fmt.Println("On(closed): ", dev.Id)
+	//	accessoriesPage.Update()
+	//	w.Invalidate()
+	//})
+
+	//mgr.On("unpair", func(e *emitter.Event) {
+	//	dev, ok := e.Args[0].(*hkontroller.Device)
+	//	if !ok {
+	//		return
+	//	}
+	//	fmt.Println("On(unpair): ", dev.Id)
+	//	accessoriesPage.Update()
+	//	w.Invalidate()
+	//})
+
 	go func() {
 		mgr.StartDiscovering()
 	}()

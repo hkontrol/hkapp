@@ -7,6 +7,7 @@ require (
 	gioui.org/x v0.0.0-20221110201648-c0c92248522e
 	github.com/brutella/dnssd v1.2.4
 	github.com/hkontrol/hkontroller v0.0.0-20221111194014-259bc179b11f
+	github.com/olebedev/emitter v0.0.0-20190110104742-e8d1457e6aee
 	golang.org/x/exp/shiny v0.0.0-20221111094246-ab4555d3164f
 )
 
@@ -29,4 +30,4 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )
 
-//replace github.com/hkontrol/hkontroller => /home/bobalus/build/hkontroller
+replace github.com/hkontrol/hkontroller => /home/bobalus/build/hkontroller

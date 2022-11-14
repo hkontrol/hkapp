@@ -54,14 +54,15 @@ var _ page.Page = &Page{}
 
 func (p *Page) Update() {
 	connections := p.App.Manager.GetVerifiedDevices()
+	fmt.Println("connections: ", len(connections))
 	p.accs = make([]hkmanager.DeviceAccPair, 0, len(connections))
 	for _, c := range connections {
-		err := c.DiscoverAccessories()
+		err := c.GetAccessories()
 		if err != nil {
 			fmt.Println("discover accs err: ", err)
 			continue
 		}
-		accs := c.GetAccessories()
+		accs := c.Accessories()
 		for _, a := range accs {
 			p.accs = append(p.accs, hkmanager.DeviceAccPair{Device: c, Accessory: a})
 		}

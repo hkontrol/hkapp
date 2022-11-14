@@ -6,6 +6,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
+	"github.com/olebedev/emitter"
 	"hkapp/applayout"
 	"hkapp/application"
 	"reflect"
@@ -19,6 +20,8 @@ type LightBulb struct {
 	acc *hkontroller.Accessory
 	dev *hkontroller.Device
 	th  *material.Theme
+
+	events <-chan emitter.Event
 
 	*application.App
 }
@@ -73,9 +76,6 @@ func NewLightBulb(app *application.App, acc *hkontroller.Accessory, dev *hkontro
 	if !ok {
 		convertOnValue(false, l)
 	}
-	dev.SubscribeToEvents(acc.Id, withValOnC.Iid, func(aid uint64, iid uint64, value interface{}) {
-		convertOnValue(value, l)
-	})
 
 	return l, nil
 }
@@ -101,10 +101,21 @@ func (l *LightBulb) SubscribeToEvents() {
 		return
 	}
 
-	l.dev.SubscribeToEvents(l.acc.Id, onC.Iid, func(aid uint64, iid uint64, value interface{}) {
+	onEvent := func(e emitter.Event) {
+		value := e.Args[2]
 		convertOnValue(value, l)
 		l.App.Window.Invalidate()
-	})
+	}
+	events, err := l.dev.SubscribeToEvents(l.acc.Id, onC.Iid)
+	if err != nil {
+		return
+	}
+	l.events = events
+	go func(evs <-chan emitter.Event) {
+		for e := range evs {
+			onEvent(e)
+		}
+	}(events)
 }
 func (l *LightBulb) UnsubscribeFromEvents() {
 	lbS := l.acc.GetService(hkontroller.SType_LightBulb)
@@ -115,7 +126,7 @@ func (l *LightBulb) UnsubscribeFromEvents() {
 	if onC == nil {
 		return
 	}
-	l.dev.UnsubscribeFromEvents(l.acc.Id, onC.Iid)
+	l.dev.UnsubscribeFromEvents(l.acc.Id, onC.Iid, l.events)
 }
 
 func (s *LightBulb) Layout(gtx C) D {

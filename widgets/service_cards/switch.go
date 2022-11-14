@@ -6,6 +6,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
+	"github.com/olebedev/emitter"
 	"hkapp/applayout"
 	"hkapp/application"
 	"reflect"
@@ -18,6 +19,8 @@ type Switch struct {
 
 	acc *hkontroller.Accessory
 	dev *hkontroller.Device
+
+	events <-chan emitter.Event
 
 	th *material.Theme
 
@@ -96,10 +99,21 @@ func (s *Switch) SubscribeToEvents() {
 		return
 	}
 
-	s.dev.SubscribeToEvents(s.acc.Id, onC.Iid, func(aid uint64, iid uint64, value interface{}) {
+	onEvent := func(e emitter.Event) {
+		value := e.Args[2]
 		convertOnValue(value, s)
 		s.App.Window.Invalidate()
-	})
+	}
+	events, err := s.dev.SubscribeToEvents(s.acc.Id, onC.Iid)
+	if err != nil {
+		return
+	}
+	s.events = events
+	go func(evs <-chan emitter.Event) {
+		for e := range evs {
+			onEvent(e)
+		}
+	}(events)
 }
 func (s *Switch) UnsubscribeFromEvents() {
 	switchS := s.acc.GetService(hkontroller.SType_Switch)
@@ -110,7 +124,7 @@ func (s *Switch) UnsubscribeFromEvents() {
 	if onC == nil {
 		return
 	}
-	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid)
+	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid, s.events)
 }
 
 func (s *Switch) OnBoolValueChanged() error {
