@@ -24,6 +24,7 @@ type HomeKitManager struct {
 	lostEvent     chan *hkontroller.Device
 	pairedEvent   chan *hkontroller.Device
 	verifiedEvent chan *hkontroller.Device
+	closeEvent    chan *hkontroller.Device
 
 	//emitter.Emitter
 }
@@ -39,6 +40,7 @@ func NewAppManager(controller *hkontroller.Controller, store hkontroller.Store) 
 		lostEvent:     make(chan *hkontroller.Device),
 		pairedEvent:   make(chan *hkontroller.Device),
 		verifiedEvent: make(chan *hkontroller.Device),
+		closeEvent:    make(chan *hkontroller.Device),
 	}
 }
 
@@ -53,6 +55,9 @@ func (a *HomeKitManager) EventDevicePaired() chan *hkontroller.Device {
 }
 func (a *HomeKitManager) EventDeviceVerified() chan *hkontroller.Device {
 	return a.verifiedEvent
+}
+func (a *HomeKitManager) EventDeviceClose() chan *hkontroller.Device {
+	return a.closeEvent
 }
 
 func (a *HomeKitManager) StartDiscovering() {

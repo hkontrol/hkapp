@@ -3,6 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gioui.org/app"
+	"gioui.org/layout"
+	"gioui.org/unit"
+	"github.com/hkontrol/hkontroller"
 	"hkapp/application"
 	"hkapp/hkmanager"
 	page "hkapp/pages"
@@ -10,11 +14,6 @@ import (
 	"hkapp/pages/discover"
 	"os"
 	"path"
-
-	"gioui.org/app"
-	"gioui.org/layout"
-	"gioui.org/unit"
-	"github.com/hkontrol/hkontroller"
 )
 
 type (
@@ -70,55 +69,33 @@ func main() {
 		os.Exit(0)
 	}()
 
+	updatePages := func() {
+		discoverPage.Update()
+		accessoriesPage.Update()
+		w.Invalidate()
+	}
 	go func() {
-		for dev := range mgr.EventDeviceDiscover() {
-			fmt.Println("On(discover): ", dev.Id)
-			discoverPage.Update()
-			w.Invalidate()
-			fmt.Println("on discover return from cb")
+		for range mgr.EventDeviceDiscover() {
+			updatePages()
 		}
 	}()
 
 	go func() {
-		for dev := range mgr.EventDeviceLost() {
-			fmt.Println("On(lost): ", dev.Id)
-			accessoriesPage.Update()
-			discoverPage.Update()
-			w.Invalidate()
+		for range mgr.EventDeviceLost() {
+			updatePages()
 		}
 	}()
 
 	go func() {
-		for dev := range mgr.EventDeviceVerified() {
-			fmt.Println("On(verified): ", dev.Id)
-
-			fmt.Println(dev.GetAccessories())
-			fmt.Println(len(dev.Accessories()))
-
-			go accessoriesPage.Update()
-			w.Invalidate()
+		for range mgr.EventDeviceVerified() {
+			updatePages()
 		}
 	}()
-
-	//mgr.On("close", func(e *emitter.Event) {
-	//	dev, ok := e.Args[0].(*hkontroller.Device)
-	//	if !ok {
-	//		return
-	//	}
-	//	fmt.Println("On(closed): ", dev.Id)
-	//	accessoriesPage.Update()
-	//	w.Invalidate()
-	//})
-
-	//mgr.On("unpair", func(e *emitter.Event) {
-	//	dev, ok := e.Args[0].(*hkontroller.Device)
-	//	if !ok {
-	//		return
-	//	}
-	//	fmt.Println("On(unpair): ", dev.Id)
-	//	accessoriesPage.Update()
-	//	w.Invalidate()
-	//})
+	go func() {
+		for range mgr.EventDeviceClose() {
+			updatePages()
+		}
+	}()
 
 	go func() {
 		mgr.StartDiscovering()
