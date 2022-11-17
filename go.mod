@@ -30,4 +30,4 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )
 
-//replace github.com/hkontrol/hkontroller => /home/bobalus/build/hkontroller
+replace github.com/hkontrol/hkontroller => /home/bobalus/build/hkontroller

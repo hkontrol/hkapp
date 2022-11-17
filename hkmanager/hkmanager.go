@@ -1,11 +1,12 @@
 package hkmanager
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/brutella/dnssd"
 	"github.com/hkontrol/hkontroller"
 	"sync"
+	"time"
 )
 
 type DeviceAccPair struct {
@@ -62,10 +63,13 @@ func (a *HomeKitManager) EventDeviceClose() chan *hkontroller.Device {
 
 func (a *HomeKitManager) StartDiscovering() {
 	_ = a.controller.LoadPairings()
-	a.controller.StartDiscovering(
-		func(entry *dnssd.BrowseEntry, device *hkontroller.Device) {
+	discoCh, lostCh := a.controller.StartDiscovering()
+
+	go func() {
+		for device := range discoCh {
 			a.mu.Lock()
 			defer a.mu.Unlock()
+
 			id := device.Id
 			a.discovered[id] = device
 
@@ -79,8 +83,11 @@ func (a *HomeKitManager) StartDiscovering() {
 					_ = a.UnpairDevice(device)
 				}
 			}
-		},
-		func(entry *dnssd.BrowseEntry, device *hkontroller.Device) {
+		}
+	}()
+
+	go func() {
+		for device := range lostCh {
 			a.mu.Lock()
 			defer a.mu.Unlock()
 			id := device.Id
@@ -88,8 +95,8 @@ func (a *HomeKitManager) StartDiscovering() {
 
 			delete(a.discovered, id)
 			a.lostEvent <- device
-		},
-	)
+		}
+	}()
 }
 
 func (a *HomeKitManager) GetDevices() []*hkontroller.Device {
@@ -137,16 +144,11 @@ func (a *HomeKitManager) PairVerify(devId string) error {
 	if d == nil {
 		return errors.New("no device found")
 	}
-	err := d.PairVerify()
-	if err != nil {
-		return err
-	}
+	err := d.PairSetupAndVerify(context.Background(), "xz", 5*time.Second)
 
-	//go func() {
 	err = d.GetAccessories()
 	fmt.Println("discovered accs: ", len(d.Accessories()), err)
 	a.verifiedEvent <- d // TODO replace
-	//}()
 	return nil
 }
 

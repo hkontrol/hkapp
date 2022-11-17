@@ -22,6 +22,8 @@ github.com/gioui/uax v0.2.1-0.20220819135011-cda973fac06d h1:ro1W5kY1pVBLHy4GokZ
 github.com/gioui/uax v0.2.1-0.20220819135011-cda973fac06d/go.mod h1:b6uGh9ySJPVQG/RdiI88bE5sUGDk6vzzRujv1BAeuJc=
 github.com/go-text/typesetting v0.0.0-20220411150340-35994bc27a7b h1:WINlj3ANt+CVrO2B4NGDHRlPvEWZPxjhb7z+JKypwXI=
 github.com/go-text/typesetting v0.0.0-20220411150340-35994bc27a7b/go.mod h1:ZNYu5saGoMOqtkVH5T8onTwhzenDUVszI+5WFHJRaxQ=
+github.com/hkontrol/hkontroller v0.0.0-20221111194014-259bc179b11f h1:b0bSoQEZY5p+SCFUc2ly7s6GBTZtFjLD7iI40N4LkfE=
+github.com/hkontrol/hkontroller v0.0.0-20221111194014-259bc179b11f/go.mod h1:epO04Pd2Ras23cx8b19nvB/OAckNApww8+Nf86rntNk=
 github.com/miekg/dns v1.1.50 h1:DQUfb9uc6smULcREF09Uc+/Gd46YWqJd5DbpPE9xkcA=
 github.com/miekg/dns v1.1.50/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
 github.com/olebedev/emitter v0.0.0-20190110104742-e8d1457e6aee h1:IquUs3fIykn10zWDIyddanhpTqBvAHMaPnFhQuyYw5U=
