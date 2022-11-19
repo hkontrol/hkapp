@@ -7,22 +7,36 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget/material"
-	"hkapp/hkmanager"
+	"github.com/hkontrol/hkontroller"
 	page "hkapp/pages"
 )
 
 type App struct {
-	Manager *hkmanager.HomeKitManager
+	Manager *hkontroller.Controller
 	Window  *app.Window
 	Router  *page.Router
+
+	*material.Theme
+}
+
+func NewApp(controller *hkontroller.Controller, window *app.Window, router *page.Router) *App {
+	return &App{
+		Manager: controller,
+		Window:  window,
+		Router:  router,
+		Theme:   material.NewTheme(gofont.Collection()),
+	}
 }
 
 func (a *App) Loop() error {
-	return loop(a.Window, a.Router, a.Manager)
+	return a.loop()
 }
 
-func loop(w *app.Window, router *page.Router, mgr *hkmanager.HomeKitManager) error {
-	th := material.NewTheme(gofont.Collection())
+func (a *App) loop() error {
+	w := a.Window
+	router := a.Router
+	th := a.Theme
+
 	var ops op.Ops
 	for {
 		select {

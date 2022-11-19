@@ -7,8 +7,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
+	"github.com/hkontrol/hkontroller"
 	"hkapp/application"
-	"hkapp/hkmanager"
 	"hkapp/icon"
 	page "hkapp/pages"
 	"hkapp/widgets/accessory_card"
@@ -20,12 +20,17 @@ type (
 	D = layout.Dimensions
 )
 
+type DeviceAccPair struct {
+	*hkontroller.Device
+	*hkontroller.Accessory
+}
+
 // Page holds the state for a page demonstrating the features of
 // the NavDrawer component.
 type Page struct {
 	widget.List
 
-	accs []hkmanager.DeviceAccPair
+	accs []DeviceAccPair
 
 	// clickable elements for cards
 	clickables []widget.Clickable
@@ -55,7 +60,7 @@ var _ page.Page = &Page{}
 func (p *Page) Update() {
 	connections := p.App.Manager.GetVerifiedDevices()
 	fmt.Println("connections: ", len(connections))
-	p.accs = make([]hkmanager.DeviceAccPair, 0, len(connections))
+	p.accs = make([]DeviceAccPair, 0, len(connections))
 	for _, c := range connections {
 		err := c.GetAccessories()
 		if err != nil {
@@ -64,7 +69,7 @@ func (p *Page) Update() {
 		}
 		accs := c.Accessories()
 		for _, a := range accs {
-			p.accs = append(p.accs, hkmanager.DeviceAccPair{Device: c, Accessory: a})
+			p.accs = append(p.accs, DeviceAccPair{Device: c, Accessory: a})
 		}
 	}
 	p.clickables = make([]widget.Clickable, len(p.accs))

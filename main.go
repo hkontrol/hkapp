@@ -8,7 +8,6 @@ import (
 	"gioui.org/unit"
 	"github.com/hkontrol/hkontroller"
 	"hkapp/application"
-	"hkapp/hkmanager"
 	page "hkapp/pages"
 	"hkapp/pages/accessories"
 	"hkapp/pages/discover"
@@ -41,26 +40,20 @@ func main() {
 	)
 	_ = hk.LoadPairings()
 
-	mgr := hkmanager.NewAppManager(hk, st)
-
 	w := app.NewWindow(
 		app.Title("hkontroller"),
 		app.Size(unit.Dp(400), unit.Dp(600)),
 	)
 
-	myapp := &application.App{
-		Manager: mgr,
-		//controller: hk,
-		Window: w,
-	}
+	router := page.NewRouter()
+
+	myapp := application.NewApp(hk, w, router)
 	myapp.Window.Invalidate()
 
-	router := page.NewRouter()
 	discoverPage := discover.New(myapp)
 	accessoriesPage := accessories.New(myapp)
 	router.Register(0, accessoriesPage)
 	router.Register(1, discoverPage)
-	myapp.Router = router
 
 	go func() {
 		if err := myapp.Loop(); err != nil {
@@ -74,31 +67,49 @@ func main() {
 		accessoriesPage.Update()
 		w.Invalidate()
 	}
+
+	discoCh, lostCh := hk.StartDiscovering()
+
 	go func() {
-		for range mgr.EventDeviceDiscover() {
+		for dev := range discoCh {
+			go func(d *hkontroller.Device) {
+				for range dev.OnVerified() {
+					err := dev.GetAccessories()
+					if err == nil {
+						accessoriesPage.Update()
+						w.Invalidate()
+					}
+				}
+			}(dev)
+			go func(d *hkontroller.Device) {
+				for range dev.OnClose() {
+					accessoriesPage.Update()
+					w.Invalidate()
+				}
+			}(dev)
+			go func(d *hkontroller.Device) {
+				for range dev.OnLost() {
+					accessoriesPage.Update()
+					discoverPage.Update()
+					w.Invalidate()
+				}
+			}(dev)
+			go func(d *hkontroller.Device) {
+				for range dev.OnUnpaired() {
+					accessoriesPage.Update()
+					discoverPage.Update()
+					w.Invalidate()
+				}
+			}(dev)
+
 			updatePages()
 		}
 	}()
 
 	go func() {
-		for range mgr.EventDeviceLost() {
+		for range lostCh {
 			updatePages()
 		}
-	}()
-
-	go func() {
-		for range mgr.EventDeviceVerified() {
-			updatePages()
-		}
-	}()
-	go func() {
-		for range mgr.EventDeviceClose() {
-			updatePages()
-		}
-	}()
-
-	go func() {
-		mgr.StartDiscovering()
 	}()
 
 	app.Main()

@@ -1,6 +1,7 @@
 package discover
 
 import (
+	"context"
 	"fmt"
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -11,6 +12,7 @@ import (
 	"hkapp/application"
 	"hkapp/icon"
 	page "hkapp/pages"
+	"time"
 )
 
 type (
@@ -77,7 +79,7 @@ const (
 )
 
 func (p *Page) Update() {
-	p.devs = p.App.Manager.GetDevices()
+	p.devs = p.App.Manager.GetAllDevices()
 	p.devClicks = make([]widget.Clickable, len(p.devs))
 
 	for _, d := range p.devs {
@@ -105,27 +107,27 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 
 	if p.btnPair.Clicked() {
 		pin := p.pinInput.Text()
-		devId := p.devs[p.devSelected].Id
-		fmt.Println("btnPair: ", devId, pin)
-		err := p.App.Manager.PairSetupAndVerify(devId, pin)
+		dev := p.devs[p.devSelected]
+		fmt.Println("btnPair: ", dev.Id, pin)
+		err := dev.PairSetupAndVerify(context.TODO(), pin, 5*time.Second)
 		if err != nil {
-			_ = p.App.Manager.UnpairDevice(p.devs[p.devSelected])
+			fmt.Println("pairErr: ", err)
+			_ = dev.Unpair()
 		}
-		fmt.Println("pairErr: ", err)
 		p.Update()
 	}
 	if p.btnUnpair.Clicked() {
 		dev := p.devs[p.devSelected]
 		fmt.Println("btnUnpair: ", dev.Id)
-		_ = p.App.Manager.UnpairDevice(dev)
+		_ = dev.Unpair()
 		p.Update()
 	}
 	if p.btnVerify.Clicked() {
 		dev := p.devs[p.devSelected]
 		fmt.Println("btnVerify: ", dev.Id)
-		err := p.App.Manager.PairVerify(dev.Id)
+		err := dev.PairVerify()
 		if err != nil {
-			_ = p.App.Manager.UnpairDevice(dev)
+			_ = dev.Unpair()
 		}
 		p.Update()
 	}
