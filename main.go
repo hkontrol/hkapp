@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"gioui.org/app"
@@ -11,8 +12,11 @@ import (
 	page "hkapp/pages"
 	"hkapp/pages/accessories"
 	"hkapp/pages/discover"
+	"log"
 	"os"
 	"path"
+	"sync"
+	"time"
 )
 
 type (
@@ -68,46 +72,85 @@ func main() {
 		w.Invalidate()
 	}
 
+	updatePages()
+
+	mu := sync.Mutex{}
+	devs := make(map[string]struct{}) // to store already discovered accs
+
 	discoCh, lostCh := hk.StartDiscovering()
 
 	go func() {
 		for dev := range discoCh {
-			go func(d *hkontroller.Device) {
-				for range dev.OnVerified() {
-					err := dev.GetAccessories()
-					if err == nil {
+			fmt.Println("discovered: ", dev.Id)
+
+			mu.Lock()
+			_, ok := devs[dev.Id]
+			mu.Unlock()
+
+			if !ok { // first discover
+				fmt.Println("first discover")
+				mu.Lock()
+				devs[dev.Id] = struct{}{}
+				mu.Unlock()
+
+				go func(d *hkontroller.Device) {
+					for range dev.OnVerified() {
+						err := dev.GetAccessories()
+						if err == nil {
+							accessoriesPage.Update()
+							w.Invalidate()
+						}
+					}
+				}(dev)
+				go func(d *hkontroller.Device) {
+					for range dev.OnClose() {
 						accessoriesPage.Update()
 						w.Invalidate()
 					}
-				}
-			}(dev)
-			go func(d *hkontroller.Device) {
-				for range dev.OnClose() {
-					accessoriesPage.Update()
-					w.Invalidate()
-				}
-			}(dev)
-			go func(d *hkontroller.Device) {
-				for range dev.OnLost() {
-					accessoriesPage.Update()
-					discoverPage.Update()
-					w.Invalidate()
-				}
-			}(dev)
-			go func(d *hkontroller.Device) {
-				for range dev.OnUnpaired() {
-					accessoriesPage.Update()
-					discoverPage.Update()
-					w.Invalidate()
-				}
-			}(dev)
+				}(dev)
+				go func(d *hkontroller.Device) {
+					for range dev.OnLost() {
+						accessoriesPage.Update()
+						discoverPage.Update()
+						w.Invalidate()
+					}
+				}(dev)
+				go func(d *hkontroller.Device) {
+					for range dev.OnUnpaired() {
+						accessoriesPage.Update()
+						discoverPage.Update()
+						w.Invalidate()
+					}
+				}(dev)
+			} else {
+				fmt.Println("was discovered before")
+			}
+
+			if dev.IsPaired() {
+				log.Println("already paired, establishing connection")
+				go func(d *hkontroller.Device) {
+					ctx := context.Background()
+					err := d.PairSetupAndVerify(ctx, "---", 5*time.Second)
+					if err != nil {
+						log.Println("pair-verify err: ", err)
+						d.Unpair()
+						return
+					}
+				}(dev)
+			}
 
 			updatePages()
 		}
 	}()
 
 	go func() {
-		for range lostCh {
+		for dev := range lostCh {
+			if !dev.IsPaired() {
+				log.Println("lost and not paired, delete from discovered")
+				mu.Lock()
+				delete(devs, dev.Id)
+				mu.Unlock()
+			}
 			updatePages()
 		}
 	}()
