@@ -3,12 +3,15 @@ package service_cards
 import (
 	"errors"
 	"fmt"
+	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
 	"hkapp/applayout"
 	"hkapp/application"
+	"image/color"
 	"reflect"
 )
 
@@ -158,8 +161,19 @@ func (s *Switch) Layout(gtx C) D {
 		return material.Body1(s.th, err.Error()).Layout(gtx)
 	}
 
-	return applayout.DetailRow{}.Layout(gtx,
-		material.Body1(s.th, s.label).Layout,
-		material.Switch(s.th, &s.Bool, s.label).Layout,
-	)
+	return widget.Border{
+		Color: color.NRGBA{
+			R: 255,
+			G: 0,
+			B: 0,
+			A: 255,
+		},
+		Width:        unit.Dp(1),
+		CornerRadius: unit.Dp(1),
+	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
+			material.Body1(s.th, s.label).Layout,
+			material.Switch(s.th, &s.Bool, s.label).Layout,
+		)
+	})
 }
