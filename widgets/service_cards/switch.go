@@ -105,6 +105,7 @@ func (s *Switch) SubscribeToEvents() {
 		s.App.Window.Invalidate()
 	}
 	events, err := s.dev.SubscribeToEvents(s.acc.Id, onC.Iid)
+	fmt.Println("subscribed to events err? ", err)
 	if err != nil {
 		return
 	}

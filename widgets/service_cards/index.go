@@ -12,6 +12,14 @@ type (
 	D = layout.Dimensions
 )
 
+type withLayoutFunc struct {
+	content func(C) D
+}
+
+func (t withLayoutFunc) Layout(gtx C) D {
+	return t.content(gtx)
+}
+
 func GetWidgetForService(app *application.App,
 	acc *hkontroller.Accessory, dev *hkontroller.Device,
 	s *hkontroller.ServiceDescription, th *material.Theme,
@@ -31,12 +39,21 @@ func GetWidgetForService(app *application.App,
 		}
 	}
 
+	var w interface {
+		Layout(C) D
+	}
+	var err error
+
 	switch s.Type {
 	case hkontroller.SType_LightBulb:
-		return NewLightBulb(app, acc, dev, th)
+		w, err = NewLightBulb(app, acc, dev, th)
 	case hkontroller.SType_Switch:
-		return NewSwitch(app, acc, dev, th)
+		w, err = NewSwitch(app, acc, dev, th)
+	case hkontroller.SType_AccessoryInfo:
+		w, err = NewAccessoryInfo(app, acc, dev, th)
 	default:
-		return material.Body2(th, label), nil
+		w = material.Body2(th, label)
 	}
+
+	return w, err
 }

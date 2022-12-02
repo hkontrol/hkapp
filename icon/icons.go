@@ -69,3 +69,8 @@ var LightBulbIcon *widget.Icon = func() *widget.Icon {
 	icon, _ := widget.NewIcon(icons.ActionLightbulbOutline)
 	return icon
 }()
+
+var ExitIcon *widget.Icon = func() *widget.Icon {
+	icon, _ := widget.NewIcon(icons.ActionExitToApp)
+	return icon
+}()

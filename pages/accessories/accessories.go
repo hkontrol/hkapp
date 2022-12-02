@@ -36,7 +36,8 @@ type Page struct {
 	clickables []widget.Clickable
 
 	// for opened accessory
-	closeSelectedAcc widget.Clickable
+	closeSelectedAcc     widget.Clickable
+	closeSelectedAccIcon widget.Clickable
 
 	// index of selected accessory
 	selectedAccIdx  int
@@ -77,7 +78,18 @@ func (p *Page) Update() {
 }
 
 func (p *Page) Actions() []component.AppBarAction {
-	return []component.AppBarAction{}
+	if p.selectedAccIdx > -1 {
+		return []component.AppBarAction{
+			component.SimpleIconAction(&p.closeSelectedAccIcon, icon.ExitIcon,
+				component.OverflowAction{
+					Name: "Close",
+					Tag:  &p.closeSelectedAccIcon,
+				},
+			),
+		}
+	} else {
+		return []component.AppBarAction{}
+	}
 }
 
 func (p *Page) Overflow() []component.OverflowAction {
@@ -104,15 +116,19 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 			if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
 				ap.SubscribeToEvents()
 			}
+			p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
+			p.App.Window.Invalidate()
 		}
 	}
-	for p.closeSelectedAcc.Clicked() {
+	for p.closeSelectedAcc.Clicked() || p.closeSelectedAccIcon.Clicked() {
 		fmt.Println("close selected acc")
 		p.selectedAccIdx = -1
 		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
 			ap.UnsubscribeFromEvents()
 		}
 		p.selectedAccPage = nil
+		p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
+		p.App.Window.Invalidate()
 	}
 
 	if p.selectedAccIdx < 0 {
@@ -154,14 +170,22 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 			Axis: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return p.selectedAccPage.Layout(gtx)
-			}),
-			layout.Rigid(
-				// The height of the spacer is 25 Device independent pixels
-				layout.Spacer{Height: unit.Dp(25)}.Layout,
-			),
-			layout.Rigid(func(gtx C) D {
-				return material.Button(th, &p.closeSelectedAcc, "close").Layout(gtx)
+				return (layout.Inset{Left: unit.Dp(6)}).Layout(gtx,
+					func(gtx C) D {
+						p.List.Axis = layout.Vertical
+
+						listStyle := material.List(th, &p.List)
+
+						return listStyle.Layout(gtx, 3, func(gtx C, i int) D {
+							if i == 0 {
+								return p.selectedAccPage.Layout(gtx)
+							} else if i == 1 {
+								return layout.Spacer{Height: unit.Dp(25)}.Layout(gtx)
+							} else {
+								return material.Button(th, &p.closeSelectedAcc, "close").Layout(gtx)
+							}
+						})
+					})
 			}),
 		)
 	}
