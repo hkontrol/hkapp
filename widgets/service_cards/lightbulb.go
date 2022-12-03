@@ -12,7 +12,6 @@ import (
 	"hkapp/applayout"
 	"hkapp/application"
 	"image/color"
-	"reflect"
 )
 
 type LightBulb struct {
@@ -70,8 +69,6 @@ func NewLightBulb(app *application.App, acc *hkontroller.Accessory, dev *hkontro
 
 	withValOnC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
 	if err == nil {
-		fmt.Println(withValOnC.Value, reflect.TypeOf(withValOnC.Value))
-
 		convertOnValue(withValOnC.Value, l)
 	} else {
 		convertOnValue(onC.Value, l)

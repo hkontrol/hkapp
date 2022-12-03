@@ -64,12 +64,7 @@ func New(app *application.App) *Page {
 var _ page.Page = &Page{}
 
 func (p *Page) Update() {
-	fmt.Println("Update() () () () () ()")
 	devices := p.App.Manager.GetVerifiedDevices()
-	fmt.Println("devices: ", len(devices))
-
-	// TODO: some kind of cache
-	//		 to avoid creating NewAccessoryCard on every update
 
 	p.accs = []DeviceAccPair{}
 	p.clickables = []widgets.LongClickable{}
@@ -140,10 +135,8 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	}
 
 	for i := range p.clickables {
-		for p.clickables[i].ShortClick() {
-			fmt.Println("short click ", i)
 
-			//card := accessory_card.NewAccessoryCard(p.App, acc, dev, &p.clickables[i], p.th)
+		for p.clickables[i].ShortClick() {
 			card := p.cards[i]
 			if card.QuickActionSupported() {
 				card.TriggerQuickAction()
@@ -151,13 +144,13 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				openAccPage(i)
 			}
 		}
+
 		for p.clickables[i].LongClick() {
-			fmt.Println("long click ", i)
 			openAccPage(i)
 		}
+
 	}
 	for p.closeSelectedAcc.Clicked() || p.closeSelectedAccIcon.Clicked() {
-		fmt.Println("close selected acc")
 		p.selectedAccIdx = -1
 		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
 			ap.UnsubscribeFromEvents()

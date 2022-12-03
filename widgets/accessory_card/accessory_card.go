@@ -57,7 +57,7 @@ func NewAccessoryCard(app *application.App, acc *hkontroller.Accessory, dev *hko
 	var primaryWidget interface{ Layout(C) D }
 	if primary != nil {
 		// TODO: GetQuickWidgetForService
-		// 		 so widgets for full version and quick version differs
+		// 		  so widgets for full version and quick version differs
 		w, err := service_cards.GetWidgetForService(app, acc, dev, primary)
 		if err == nil {
 			primaryWidget = w
@@ -112,7 +112,7 @@ func (s *AccessoryCard) Layout(gtx C) D {
 				R: 0,
 				G: 0,
 				B: 0,
-				A: 255,
+				A: 128,
 			},
 			Width:        unit.Dp(1),
 			CornerRadius: unit.Dp(3),

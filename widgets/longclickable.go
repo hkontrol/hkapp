@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -33,7 +32,6 @@ func (b *LongClickable) update() {
 			b.shortPressed = false
 			b.longPressed = false
 			b.timer = time.AfterFunc(b.dur, func() {
-				fmt.Println("AfterFunc")
 				b.triggered = true
 				if b.pressed {
 					b.longPressed = true

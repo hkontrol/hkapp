@@ -2,7 +2,6 @@ package service_cards
 
 import (
 	"errors"
-	"fmt"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -12,7 +11,6 @@ import (
 	"hkapp/applayout"
 	"hkapp/application"
 	"image/color"
-	"reflect"
 )
 
 type Switch struct {
@@ -69,7 +67,6 @@ func NewSwitch(app *application.App, acc *hkontroller.Accessory, dev *hkontrolle
 	}
 	withValOnC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
 	if err == nil {
-		fmt.Println(withValOnC.Value, reflect.TypeOf(withValOnC.Value))
 		convertOnValue(withValOnC.Value, s)
 	} else {
 		convertOnValue(onC.Value, s)
@@ -108,7 +105,6 @@ func (s *Switch) SubscribeToEvents() {
 		s.App.Window.Invalidate()
 	}
 	events, err := s.dev.SubscribeToEvents(s.acc.Id, onC.Iid)
-	fmt.Println("subscribed to events err? ", err)
 	if err != nil {
 		return
 	}
