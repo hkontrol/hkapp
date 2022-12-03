@@ -163,8 +163,8 @@ func (s *Switch) Layout(gtx C) D {
 
 	return widget.Border{
 		Color: color.NRGBA{
-			R: 255,
-			G: 0,
+			R: 0,
+			G: 255,
 			B: 0,
 			A: 255,
 		},

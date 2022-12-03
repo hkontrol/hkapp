@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
+	"hkapp/widgets"
 	"image"
 	"image/color"
 )
@@ -18,13 +19,13 @@ type (
 )
 
 type AccessoryCard struct {
-	clickable *widget.Clickable
+	clickable *widgets.LongClickable
 
 	acc *hkontroller.Accessory
 	th  *material.Theme
 }
 
-func NewAccessoryCard(th *material.Theme, clickable *widget.Clickable, accessory *hkontroller.Accessory) *AccessoryCard {
+func NewAccessoryCard(th *material.Theme, clickable *widgets.LongClickable, accessory *hkontroller.Accessory) *AccessoryCard {
 	return &AccessoryCard{
 		clickable: clickable,
 		acc:       accessory,
@@ -52,7 +53,7 @@ func (s *AccessoryCard) Layout(gtx C) D {
 	for i := range s.acc.Ss {
 		srv := s.acc.Ss[i]
 		fc := layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return material.Body2(s.th, string(srv.Type)).Layout(gtx)
+			return material.Body2(s.th, " - "+srv.Type.String()).Layout(gtx)
 		})
 		serviceLabels = append(serviceLabels, fc)
 	}
@@ -86,5 +87,10 @@ func (s *AccessoryCard) Layout(gtx C) D {
 		})
 	}
 
-	return material.Clickable(gtx, s.clickable, content)
+	return s.clickable.Layout(gtx, content)
+
+	//lc := widgets.NewLongClickable(s.clickable)
+	//return lc.Layout(gtx, content)
+
+	//return material.Clickable(gtx, s.clickable, content)
 }

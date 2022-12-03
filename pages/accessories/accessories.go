@@ -11,8 +11,10 @@ import (
 	"hkapp/application"
 	"hkapp/icon"
 	page "hkapp/pages"
+	"hkapp/widgets"
 	"hkapp/widgets/accessory_card"
 	"hkapp/widgets/accessory_page"
+	"time"
 )
 
 type (
@@ -33,7 +35,8 @@ type Page struct {
 	accs []DeviceAccPair
 
 	// clickable elements for cards
-	clickables []widget.Clickable
+	//clickables []widget.Clickable
+	clickables []widgets.LongClickable
 
 	// for opened accessory
 	closeSelectedAcc     widget.Clickable
@@ -74,7 +77,10 @@ func (p *Page) Update() {
 			p.accs = append(p.accs, DeviceAccPair{Device: c, Accessory: a})
 		}
 	}
-	p.clickables = make([]widget.Clickable, len(p.accs))
+	p.clickables = make([]widgets.LongClickable, len(p.accs))
+	for i := range p.clickables {
+		p.clickables[i] = widgets.NewLongClickable(time.Second)
+	}
 }
 
 func (p *Page) Actions() []component.AppBarAction {
@@ -106,8 +112,11 @@ func (p *Page) NavItem() component.NavItem {
 func (p *Page) Layout(gtx C, th *material.Theme) D {
 
 	for i := range p.clickables {
-		for p.clickables[i].Clicked() {
-			fmt.Println("clicked ", i)
+		for p.clickables[i].ShortClick() {
+			fmt.Println("short click ", i)
+		}
+		for p.clickables[i].LongClick() {
+			fmt.Println("long click ", i)
 			p.selectedAccIdx = i
 			accdev := p.accs[i]
 			acc := accdev.Accessory
