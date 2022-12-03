@@ -64,6 +64,7 @@ func New(app *application.App) *Page {
 var _ page.Page = &Page{}
 
 func (p *Page) Update() {
+	fmt.Println("Update() () () () () ()")
 	devices := p.App.Manager.GetVerifiedDevices()
 	fmt.Println("devices: ", len(devices))
 
@@ -93,6 +94,7 @@ func (p *Page) Update() {
 		d := accdev.Device
 		p.clickables[i] = widgets.NewLongClickable(500 * time.Millisecond)
 		p.cards[i] = accessory_card.NewAccessoryCard(p.App, a, d, &p.clickables[i])
+		p.cards[i].SubscribeToEvents()
 	}
 }
 

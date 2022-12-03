@@ -62,14 +62,6 @@ func NewAccessoryCard(app *application.App, acc *hkontroller.Accessory, dev *hko
 		if err == nil {
 			primaryWidget = w
 		}
-		// dangerous:
-		//type evented interface {
-		//	SubscribeToEvents()
-		//	UnsubscribeFromEvents()
-		//}
-		//if pp, ok := w.(evented); ok {
-		//	pp.SubscribeToEvents()
-		//}
 	}
 
 	return &AccessoryCard{
@@ -141,6 +133,26 @@ func (s *AccessoryCard) Layout(gtx C) D {
 	}
 
 	return s.clickable.Layout(gtx, content)
+}
+
+func (s *AccessoryCard) SubscribeToEvents() {
+	// dangerous:
+	type evented interface {
+		SubscribeToEvents()
+		UnsubscribeFromEvents()
+	}
+	if pp, ok := s.primaryWidget.(evented); ok {
+		pp.SubscribeToEvents()
+	}
+}
+func (s *AccessoryCard) UnsubscribeFromEvents() {
+	type evented interface {
+		SubscribeToEvents()
+		UnsubscribeFromEvents()
+	}
+	if pp, ok := s.primaryWidget.(evented); ok {
+		pp.UnsubscribeFromEvents()
+	}
 }
 
 func (s *AccessoryCard) QuickActionSupported() bool {
