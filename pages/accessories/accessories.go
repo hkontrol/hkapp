@@ -32,10 +32,10 @@ type DeviceAccPair struct {
 type Page struct {
 	widget.List
 
-	accs []DeviceAccPair
+	accs  []DeviceAccPair
+	cards []*accessory_card.AccessoryCard
 
 	// clickable elements for cards
-	//clickables []widget.Clickable
 	clickables []widgets.LongClickable
 
 	// for opened accessory
@@ -48,6 +48,7 @@ type Page struct {
 		Layout(C) D
 	}
 
+	th *material.Theme
 	*application.App
 }
 
@@ -55,6 +56,7 @@ type Page struct {
 func New(app *application.App) *Page {
 	return &Page{
 		App:            app,
+		th:             app.Theme,
 		selectedAccIdx: -1,
 	}
 }
@@ -62,24 +64,35 @@ func New(app *application.App) *Page {
 var _ page.Page = &Page{}
 
 func (p *Page) Update() {
-	connections := p.App.Manager.GetVerifiedDevices()
-	fmt.Println("connections: ", len(connections))
+	devices := p.App.Manager.GetVerifiedDevices()
+	fmt.Println("devices: ", len(devices))
+
+	// TODO: some kind of cache
+	//		 to avoid creating NewAccessoryCard on every update
+
 	p.accs = []DeviceAccPair{}
-	for _, c := range connections {
-		err := c.GetAccessories()
+	p.clickables = []widgets.LongClickable{}
+	p.cards = []*accessory_card.AccessoryCard{}
+
+	for _, d := range devices {
+		err := d.GetAccessories()
 		if err != nil {
 			fmt.Println("discover accs err: ", err)
 			continue
 		}
 
-		accs := c.Accessories()
+		accs := d.Accessories()
 		for _, a := range accs {
-			p.accs = append(p.accs, DeviceAccPair{Device: c, Accessory: a})
+			p.accs = append(p.accs, DeviceAccPair{Device: d, Accessory: a})
 		}
 	}
 	p.clickables = make([]widgets.LongClickable, len(p.accs))
-	for i := range p.clickables {
-		p.clickables[i] = widgets.NewLongClickable(time.Second)
+	p.cards = make([]*accessory_card.AccessoryCard, len(p.accs))
+	for i, accdev := range p.accs {
+		a := accdev.Accessory
+		d := accdev.Device
+		p.clickables[i] = widgets.NewLongClickable(500 * time.Millisecond)
+		p.cards[i] = accessory_card.NewAccessoryCard(p.App, a, d, &p.clickables[i])
 	}
 }
 
@@ -111,22 +124,34 @@ func (p *Page) NavItem() component.NavItem {
 
 func (p *Page) Layout(gtx C, th *material.Theme) D {
 
+	openAccPage := func(i int) {
+		p.selectedAccIdx = i
+		accdev := p.accs[i]
+		acc := accdev.Accessory
+		dev := accdev.Device
+		p.selectedAccPage = accessory_page.NewAccessoryPage(p.App, acc, dev, p.th)
+		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
+			ap.SubscribeToEvents()
+		}
+		p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
+		p.App.Window.Invalidate()
+	}
+
 	for i := range p.clickables {
 		for p.clickables[i].ShortClick() {
 			fmt.Println("short click ", i)
+
+			//card := accessory_card.NewAccessoryCard(p.App, acc, dev, &p.clickables[i], p.th)
+			card := p.cards[i]
+			if card.QuickActionSupported() {
+				card.TriggerQuickAction()
+			} else {
+				openAccPage(i)
+			}
 		}
 		for p.clickables[i].LongClick() {
 			fmt.Println("long click ", i)
-			p.selectedAccIdx = i
-			accdev := p.accs[i]
-			acc := accdev.Accessory
-			dev := accdev.Device
-			p.selectedAccPage = accessory_page.NewAccessoryPage(p.App, acc, dev, th)
-			if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
-				ap.SubscribeToEvents()
-			}
-			p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
-			p.App.Window.Invalidate()
+			openAccPage(i)
 		}
 	}
 	for p.closeSelectedAcc.Clicked() || p.closeSelectedAccIcon.Clicked() {
@@ -141,6 +166,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	}
 
 	if p.selectedAccIdx < 0 {
+
 		// all accessories
 		return layout.Flex{
 			Axis: layout.Vertical,
@@ -150,16 +176,18 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 					func(gtx C) D {
 						p.List.Axis = layout.Vertical
 
-						listStyle := material.List(th, &p.List)
+						listStyle := material.List(p.th, &p.List)
 
 						return listStyle.Layout(gtx, len(p.accs), func(gtx C, i int) D {
 
-							accdev := p.accs[i]
-							acc := accdev.Accessory
+							//accdev := p.accs[i]
+							//acc := accdev.Accessory
+							//dev := accdev.Device
 
 							var children []layout.Widget
-							w := accessory_card.NewAccessoryCard(th, &p.clickables[i], acc).Layout
-							children = append(children, w)
+							//w := accessory_card.NewAccessoryCard(p.App, acc, dev, &p.clickables[i], p.th).Layout
+							w := p.cards[i]
+							children = append(children, w.Layout)
 
 							var flexChildren []layout.FlexChild
 							for _, w := range children {
@@ -183,7 +211,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 					func(gtx C) D {
 						p.List.Axis = layout.Vertical
 
-						listStyle := material.List(th, &p.List)
+						listStyle := material.List(p.th, &p.List)
 
 						return listStyle.Layout(gtx, 3, func(gtx C, i int) D {
 							if i == 0 {
@@ -191,7 +219,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 							} else if i == 1 {
 								return layout.Spacer{Height: unit.Dp(25)}.Layout(gtx)
 							} else {
-								return material.Button(th, &p.closeSelectedAcc, "close").Layout(gtx)
+								return material.Button(p.th, &p.closeSelectedAcc, "close").Layout(gtx)
 							}
 						})
 					})

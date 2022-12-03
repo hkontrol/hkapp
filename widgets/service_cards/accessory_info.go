@@ -31,9 +31,9 @@ type AccessoryInfo struct {
 	*application.App
 }
 
-func NewAccessoryInfo(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) (*AccessoryInfo, error) {
+func NewAccessoryInfo(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*AccessoryInfo, error) {
 
-	i := &AccessoryInfo{acc: acc, dev: dev, th: th, App: app}
+	i := &AccessoryInfo{acc: acc, dev: dev, th: app.Theme, App: app}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {

@@ -22,7 +22,7 @@ func (t withLayoutFunc) Layout(gtx C) D {
 
 func GetWidgetForService(app *application.App,
 	acc *hkontroller.Accessory, dev *hkontroller.Device,
-	s *hkontroller.ServiceDescription, th *material.Theme,
+	s *hkontroller.ServiceDescription,
 ) (interface {
 	Layout(C) D
 }, error) {
@@ -46,13 +46,13 @@ func GetWidgetForService(app *application.App,
 
 	switch s.Type {
 	case hkontroller.SType_LightBulb:
-		w, err = NewLightBulb(app, acc, dev, th)
+		w, err = NewLightBulb(app, acc, dev)
 	case hkontroller.SType_Switch:
-		w, err = NewSwitch(app, acc, dev, th)
+		w, err = NewSwitch(app, acc, dev)
 	case hkontroller.SType_AccessoryInfo:
-		w, err = NewAccessoryInfo(app, acc, dev, th)
+		w, err = NewAccessoryInfo(app, acc, dev)
 	default:
-		w = material.Body2(th, label)
+		w = material.Body2(app.Theme, label)
 	}
 
 	return w, err

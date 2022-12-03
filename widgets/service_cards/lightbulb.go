@@ -29,9 +29,9 @@ type LightBulb struct {
 	*application.App
 }
 
-func NewLightBulb(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) (*LightBulb, error) {
+func NewLightBulb(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*LightBulb, error) {
 
-	l := &LightBulb{acc: acc, dev: dev, th: th, App: app}
+	l := &LightBulb{acc: acc, dev: dev, th: app.Theme, App: app}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {

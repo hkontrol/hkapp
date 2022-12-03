@@ -49,7 +49,7 @@ func NewAccessoryPage(app *application.App, acc *hkontroller.Accessory, dev *hko
 		}, 0, len(acc.Ss))
 
 	for _, s := range acc.Ss {
-		w, err := service_cards.GetWidgetForService(app, acc, dev, s, th)
+		w, err := service_cards.GetWidgetForService(app, acc, dev, s)
 		if err != nil {
 			continue
 		}

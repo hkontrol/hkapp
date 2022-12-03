@@ -30,8 +30,8 @@ type Switch struct {
 	*application.App
 }
 
-func NewSwitch(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device, th *material.Theme) (*Switch, error) {
-	s := &Switch{acc: acc, dev: dev, th: th, App: app}
+func NewSwitch(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*Switch, error) {
+	s := &Switch{acc: acc, dev: dev, th: app.Theme, App: app}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {
@@ -129,6 +129,11 @@ func (s *Switch) UnsubscribeFromEvents() {
 		return
 	}
 	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid, s.events)
+}
+
+func (s *Switch) QuickAction() {
+	s.Bool.Value = !s.Bool.Value
+	s.OnBoolValueChanged()
 }
 
 func (s *Switch) OnBoolValueChanged() error {

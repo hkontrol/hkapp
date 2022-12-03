@@ -97,28 +97,26 @@ func main() {
 					for range dev.OnVerified() {
 						err := dev.GetAccessories()
 						if err == nil {
-							accessoriesPage.Update()
+							updatePages()
 							w.Invalidate()
 						}
 					}
 				}(dev)
 				go func(d *hkontroller.Device) {
 					for range dev.OnClose() {
-						accessoriesPage.Update()
+						updatePages()
 						w.Invalidate()
 					}
 				}(dev)
 				go func(d *hkontroller.Device) {
 					for range dev.OnLost() {
-						accessoriesPage.Update()
-						discoverPage.Update()
+						updatePages()
 						w.Invalidate()
 					}
 				}(dev)
 				go func(d *hkontroller.Device) {
 					for range dev.OnUnpaired() {
-						accessoriesPage.Update()
-						discoverPage.Update()
+						updatePages()
 						w.Invalidate()
 					}
 				}(dev)
