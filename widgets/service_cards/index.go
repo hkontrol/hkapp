@@ -20,7 +20,6 @@ func (t withLayoutFunc) Layout(gtx C) D {
 	return t.content(gtx)
 }
 
-// TODO: some kind of cache to be able to share widget and it's state
 func GetWidgetForService(app *application.App,
 	acc *hkontroller.Accessory, dev *hkontroller.Device,
 	s *hkontroller.ServiceDescription,

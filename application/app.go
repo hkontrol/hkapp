@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"gioui.org/app"
 	"gioui.org/font/gofont"
 	"gioui.org/io/system"
@@ -8,6 +9,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
+	"github.com/olebedev/emitter"
 	page "hkapp/pages"
 )
 
@@ -17,6 +19,10 @@ type App struct {
 	Router  *page.Router
 
 	*material.Theme
+
+	// to be able to emit value changes
+	// to share state between widgets
+	ee emitter.Emitter
 }
 
 func NewApp(controller *hkontroller.Controller, window *app.Window, router *page.Router) *App {
@@ -25,6 +31,8 @@ func NewApp(controller *hkontroller.Controller, window *app.Window, router *page
 		Window:  window,
 		Router:  router,
 		Theme:   material.NewTheme(gofont.Collection()),
+
+		ee: emitter.Emitter{},
 	}
 }
 
@@ -51,4 +59,19 @@ func (a *App) loop() error {
 			}
 		}
 	}
+}
+
+func (a *App) OnValueChange(deviceId string, aid uint64, iid uint64) <-chan emitter.Event {
+	topic := fmt.Sprintf("value_%s_%d_%d", deviceId, aid, iid)
+	return a.ee.On(topic)
+}
+
+func (a *App) OffValueChange(deviceId string, aid uint64, iid uint64, ch <-chan emitter.Event) {
+	topic := fmt.Sprintf("value_%s_%d_%d", deviceId, aid, iid)
+	a.ee.Off(topic, ch)
+}
+
+func (a *App) EmitValueChange(deviceId string, aid uint64, iid uint64, value interface{}) <-chan struct{} {
+	topic := fmt.Sprintf("value_%s_%d_%d", deviceId, aid, iid)
+	return a.ee.Emit(topic, aid, iid, value)
 }

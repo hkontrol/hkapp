@@ -104,6 +104,8 @@ func (s *Switch) SubscribeToEvents() {
 		convertOnValue(value, s)
 		s.App.Window.Invalidate()
 	}
+
+	// events from HAP
 	events, err := s.dev.SubscribeToEvents(s.acc.Id, onC.Iid)
 	if err != nil {
 		return
@@ -114,7 +116,16 @@ func (s *Switch) SubscribeToEvents() {
 			onEvent(e)
 		}
 	}(events)
+
+	// events from GUI
+	vals := s.App.OnValueChange(s.dev.Id, s.acc.Id, onC.Iid)
+	go func(evs <-chan emitter.Event) {
+		for e := range evs {
+			onEvent(e)
+		}
+	}(vals)
 }
+
 func (s *Switch) UnsubscribeFromEvents() {
 	switchS := s.acc.GetService(hkontroller.SType_Switch)
 	if switchS == nil {
@@ -147,6 +158,8 @@ func (s *Switch) OnBoolValueChanged() error {
 	if err != nil {
 		return err
 	}
+
+	s.App.EmitValueChange(s.dev.Id, s.acc.Id, chr.Iid, s.Bool.Value)
 
 	return nil
 }

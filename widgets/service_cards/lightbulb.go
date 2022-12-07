@@ -116,6 +116,14 @@ func (l *LightBulb) SubscribeToEvents() {
 			onEvent(e)
 		}
 	}(events)
+
+	// events from GUI
+	vals := l.App.OnValueChange(l.dev.Id, l.acc.Id, onC.Iid)
+	go func(evs <-chan emitter.Event) {
+		for e := range evs {
+			onEvent(e)
+		}
+	}(vals)
 }
 func (l *LightBulb) UnsubscribeFromEvents() {
 	lbS := l.acc.GetService(hkontroller.SType_LightBulb)
