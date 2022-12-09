@@ -112,7 +112,7 @@ func (s *AccessoryCard) Layout(gtx C) D {
 				R: 0,
 				G: 0,
 				B: 0,
-				A: 128,
+				A: 64,
 			},
 			Width:        unit.Dp(1),
 			CornerRadius: unit.Dp(3),

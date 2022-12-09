@@ -83,10 +83,10 @@ func (i *AccessoryInfo) Layout(gtx C) D {
 
 	return widget.Border{
 		Color: color.NRGBA{
-			R: 255,
+			R: 0,
 			G: 0,
 			B: 0,
-			A: 255,
+			A: 64,
 		},
 		Width:        unit.Dp(1),
 		CornerRadius: unit.Dp(1),
