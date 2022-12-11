@@ -51,6 +51,8 @@ func GetWidgetForService(app *application.App,
 		w, err = NewSwitch(app, acc, dev)
 	case hkontroller.SType_AccessoryInfo:
 		w, err = NewAccessoryInfo(app, acc, dev)
+	case hkontroller.SType_Thermostat:
+		w, err = NewThermostat(app, acc, dev)
 	default:
 		w = material.Body2(app.Theme, label)
 	}

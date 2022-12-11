@@ -2,10 +2,14 @@ package service_cards
 
 import (
 	"errors"
+	"fmt"
+	"gioui.org/widget"
+	"hkapp/application"
+
+	"gioui.org/layout"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
-	"hkapp/application"
 )
 
 /*
@@ -43,6 +47,9 @@ type Thermostat struct {
 	currentRelativeHumidity *hkontroller.CharacteristicDescription
 	targetRelativeHumidity  *hkontroller.CharacteristicDescription
 
+	targetModeEnum  widget.Enum
+	targetTempFloat widget.Float
+
 	th *material.Theme
 
 	*application.App
@@ -53,6 +60,7 @@ func NewThermostat(app *application.App, acc *hkontroller.Accessory, dev *hkontr
 		App: app,
 		acc: acc,
 		dev: dev,
+		th:  app.Theme,
 	}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
@@ -102,6 +110,8 @@ func NewThermostat(app *application.App, acc *hkontroller.Accessory, dev *hkontr
 	t.targetTempC = targetTempC
 	t.tempDisplayUnitsC = tempDisplayUnitsC
 
+	// TODO hapEvents
+
 	// optional chars
 	t.coolingThresholdTempC = srv.GetCharacteristic(hkontroller.CType_CoolingThresholdTemperature)
 	t.heatingThresholdTempC = srv.GetCharacteristic(hkontroller.CType_HeatingThresholdTemperature)
@@ -120,5 +130,59 @@ func (t *Thermostat) UnsubscribeFromEvents() error {
 }
 
 func (t *Thermostat) Layout(gtx C) D {
-	return D{}
+
+	for t.targetTempFloat.Changed() {
+		val := t.targetTempFloat.Value
+		err := t.dev.PutCharacteristic(t.acc.Id, t.targetTempC.Iid, val)
+		if err != nil {
+			return D{}
+		}
+		t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.targetTempC.Iid, val)
+	}
+	for t.targetModeEnum.Changed() {
+		valStr := t.targetModeEnum.Value
+		valInt := 0
+		switch valStr {
+		case "off":
+			valInt = 0
+		case "heat":
+			valInt = 1
+		case "cool":
+			valInt = 2
+		case "auto":
+			valInt = 3
+		}
+		err := t.dev.PutCharacteristic(t.acc.Id, t.targetHeatCoolStateC.Iid, valInt)
+		if err != nil {
+			return D{}
+		}
+		t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.targetHeatCoolStateC.Iid, valInt)
+	}
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Current t: %v | ", t.currentTempC.Value)).Layout),
+				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Target t: %v", t.targetTempC.Value)).Layout),
+			)
+		}),
+		layout.Rigid(material.Slider(t.th, &t.targetTempFloat, 10, 38).Layout),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "off", "Off").Layout),
+				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "heat", "Heat").Layout),
+				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "cool", "Cool").Layout),
+				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "auto", "Auto").Layout),
+			)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Current mode: %v | ", t.currentHeatCoolStateC.Value)).Layout),
+				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Target mode: %v", t.targetHeatCoolStateC.Value)).Layout),
+			)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{}.Layout(gtx)
+		}),
+	)
 }

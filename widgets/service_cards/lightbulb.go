@@ -117,7 +117,7 @@ func (l *LightBulb) SubscribeToEvents() {
 		}
 	}(events)
 
-	// events from GUI
+	// hapEvents from GUI
 	vals := l.App.OnValueChange(l.dev.Id, l.acc.Id, onC.Iid)
 	go func(evs <-chan emitter.Event) {
 		for e := range evs {

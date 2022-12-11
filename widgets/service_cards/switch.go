@@ -21,7 +21,8 @@ type Switch struct {
 	acc *hkontroller.Accessory
 	dev *hkontroller.Device
 
-	events <-chan emitter.Event
+	hapEvents <-chan emitter.Event
+	guiEvents <-chan emitter.Event
 
 	th *material.Theme
 
@@ -105,20 +106,21 @@ func (s *Switch) SubscribeToEvents() {
 		s.App.Window.Invalidate()
 	}
 
-	// events from HAP
+	// hapEvents from HAP
 	events, err := s.dev.SubscribeToEvents(s.acc.Id, onC.Iid)
 	if err != nil {
 		return
 	}
-	s.events = events
+	s.hapEvents = events
 	go func(evs <-chan emitter.Event) {
 		for e := range evs {
 			onEvent(e)
 		}
 	}(events)
 
-	// events from GUI
+	// hapEvents from GUI
 	vals := s.App.OnValueChange(s.dev.Id, s.acc.Id, onC.Iid)
+	s.guiEvents = vals
 	go func(evs <-chan emitter.Event) {
 		for e := range evs {
 			onEvent(e)
@@ -135,7 +137,9 @@ func (s *Switch) UnsubscribeFromEvents() {
 	if onC == nil {
 		return
 	}
-	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid, s.events)
+
+	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid, s.hapEvents)
+	s.App.OffValueChange(s.dev.Id, s.acc.Id, onC.Iid, s.guiEvents)
 }
 
 func (s *Switch) QuickAction() {
