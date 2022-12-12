@@ -53,8 +53,9 @@ type Thermostat struct {
 
 	chars map[hkontroller.HapCharacteristicType]*hkontroller.CharacteristicDescription
 
-	targetModeEnum  widget.Enum
-	targetTempFloat widget.Float
+	targetModeEnum        widget.Enum
+	targetTempFloatWidget widget.Float
+	targetTempFloatValue  float32
 
 	th *material.Theme
 
@@ -137,46 +138,73 @@ func NewThermostat(app *application.App, acc *hkontroller.Accessory, dev *hkontr
 		t.chars[hkontroller.CType_TargetRelativeHumidity] = targetRelativeHumidity
 	}
 
+	for ctype, cdescr := range t.chars {
+		// TODO: for such a case one should collect multiple chars and Get them
+		//        should be implemented in core hkontroller package as well
+		//         think also about saving in hkontroller.Device instance
+		descr, err := t.dev.GetCharacteristic(t.acc.Id, cdescr.Iid)
+		if err != nil {
+			fmt.Println("err: ", err)
+			continue
+		}
+		t.chars[ctype] = &descr
+		t.onValue(descr.Value, ctype)
+	}
+	t.App.Window.Invalidate()
+
 	return t, nil
+}
+
+func (t *Thermostat) onValue(value interface{}, ctype hkontroller.HapCharacteristicType) {
+
+	t.chars[ctype].Value = value
+	if ctype == hkontroller.CType_TargetTemperature {
+		if val32, ok := value.(float32); ok {
+			t.targetTempFloatWidget.Value = val32
+			t.targetTempFloatValue = val32
+		}
+		if val64, ok := value.(float64); ok {
+			t.targetTempFloatWidget.Value = float32(val64)
+			t.targetTempFloatValue = float32(val64)
+		}
+	}
+	if ctype == hkontroller.CType_TargetHeatingCoolingState {
+		var valInt int
+		if vi, ok := value.(int); ok {
+			valInt = vi
+		} else if vf, ok := value.(float64); ok {
+			valInt = int(vf)
+		} else {
+			return
+		}
+
+		valStr := "off"
+		switch valInt {
+		case 0:
+			valStr = "off"
+		case 1:
+			valStr = "heat"
+		case 2:
+			valStr = "cool"
+		case 3:
+			valStr = "auto"
+		}
+		t.targetModeEnum.Value = valStr
+	}
 }
 
 func (t *Thermostat) SubscribeToEvents() {
 
-	// TODO events
 	var err error
 	var ev <-chan emitter.Event
 	devId := t.dev.Id
 	aid := t.acc.Id
 	onEvent := func(e emitter.Event, ctype hkontroller.HapCharacteristicType) {
 		value := e.Args[2]
-		t.chars[ctype].Value = value
-		if ctype == hkontroller.CType_TargetTemperature {
-			if val32, ok := value.(float32); ok {
-				t.targetTempFloat.Value = val32
-			}
-			if val64, ok := value.(float64); ok {
-				t.targetTempFloat.Value = float32(val64)
-			}
-		}
-		if ctype == hkontroller.CType_TargetHeatingCoolingState {
-			valInt := value.(int)
-			valStr := "off"
-			switch valInt {
-			case 0:
-				valStr = "off"
-			case 1:
-				valStr = "heat"
-			case 2:
-				valStr = "cool"
-			case 3:
-				valStr = "auto"
-			}
-			t.targetModeEnum.Value = valStr
-		}
+		t.onValue(value, ctype)
 		t.App.Window.Invalidate()
 	}
 	for ctype, cdescr := range t.chars {
-		fmt.Println("thermo subscr to events ", ctype.String())
 		iid := cdescr.Iid
 		ev, err = t.dev.SubscribeToEvents(aid, iid)
 		if err != nil {
@@ -205,7 +233,6 @@ func (t *Thermostat) UnsubscribeFromEvents() {
 	aid := t.acc.Id
 	devId := t.dev.Id
 	for ctype, ee := range t.hapEvents {
-		fmt.Println("thermo unsubscribe from events ", ctype.String())
 		iid := t.chars[ctype].Iid
 		err := t.dev.UnsubscribeFromEvents(aid, iid, ee)
 		if err != nil {
@@ -214,7 +241,6 @@ func (t *Thermostat) UnsubscribeFromEvents() {
 		delete(t.hapEvents, ctype)
 	}
 	for ctype, ee := range t.guiEvents {
-		fmt.Println("thermo unsubscribe from gui events ", ctype.String())
 		iid := t.chars[ctype].Iid
 		t.App.OffValueChange(devId, aid, iid, ee)
 		delete(t.hapEvents, ctype)
@@ -224,9 +250,14 @@ func (t *Thermostat) UnsubscribeFromEvents() {
 
 func (t *Thermostat) Layout(gtx C) D {
 
-	for t.targetTempFloat.Changed() {
+	for t.targetTempFloatWidget.Changed() {
+		if t.targetTempFloatValue == 0 { // should trigger when widget is created
+			t.targetTempFloatValue = t.targetTempFloatWidget.Value
+			continue
+		}
 		// TODO: timeout to prevent change on drag
-		val := float64(t.targetTempFloat.Value)
+		val := float64(t.targetTempFloatWidget.Value)
+
 		ctype := hkontroller.CType_TargetTemperature
 		err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, val)
 		if err != nil {
@@ -267,7 +298,7 @@ func (t *Thermostat) Layout(gtx C) D {
 				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Target t: %v", ttemp)).Layout),
 			)
 		}),
-		layout.Rigid(material.Slider(t.th, &t.targetTempFloat, 10, 38).Layout),
+		layout.Rigid(material.Slider(t.th, &t.targetTempFloatWidget, 10, 38).Layout),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "off", "Off").Layout),
