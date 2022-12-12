@@ -4,10 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"gioui.org/app"
-	"gioui.org/layout"
-	"gioui.org/unit"
-	"github.com/hkontrol/hkontroller"
 	"hkapp/application"
 	page "hkapp/pages"
 	"hkapp/pages/accessories"
@@ -17,6 +13,11 @@ import (
 	"path"
 	"sync"
 	"time"
+
+	"gioui.org/app"
+	"gioui.org/layout"
+	"gioui.org/unit"
+	"github.com/hkontrol/hkontroller"
 )
 
 type (
