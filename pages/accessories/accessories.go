@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
+	"gioui.org/x/outlay"
 	"github.com/hkontrol/hkontroller"
 	"hkapp/application"
 	"hkapp/icon"
@@ -31,6 +32,7 @@ type DeviceAccPair struct {
 // the NavDrawer component.
 type Page struct {
 	widget.List
+	outlay.FlowWrap
 
 	accs  []DeviceAccPair
 	cards []*accessory_card.AccessoryCard
@@ -58,6 +60,10 @@ func New(app *application.App) *Page {
 		App:            app,
 		th:             app.Theme,
 		selectedAccIdx: -1,
+		FlowWrap: outlay.FlowWrap{
+			Axis:      layout.Horizontal,
+			Alignment: layout.End,
+		},
 	}
 }
 
@@ -170,28 +176,28 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				return (layout.Inset{Left: unit.Dp(6)}).Layout(gtx,
 					func(gtx C) D {
 						p.List.Axis = layout.Vertical
-
 						listStyle := material.List(p.th, &p.List)
 
-						return listStyle.Layout(gtx, len(p.accs), func(gtx C, i int) D {
+						return listStyle.Layout(gtx, 1, func(gtx C, i int) D {
+							return p.FlowWrap.Layout(gtx, len(p.accs), func(gtx C, i int) D {
+								if i >= len(p.accs) {
+									return D{}
+								}
 
-							//accdev := p.accs[i]
-							//acc := accdev.Accessory
-							//dev := accdev.Device
+								var children []layout.Widget
+								//w := accessory_card.NewAccessoryCard(p.App, acc, dev, &p.clickables[i], p.th).Layout
+								w := p.cards[i]
+								children = append(children, w.Layout)
 
-							var children []layout.Widget
-							//w := accessory_card.NewAccessoryCard(p.App, acc, dev, &p.clickables[i], p.th).Layout
-							w := p.cards[i]
-							children = append(children, w.Layout)
+								var flexChildren []layout.FlexChild
+								for _, w := range children {
+									flexChildren = append(flexChildren, layout.Rigid(w))
+								}
 
-							var flexChildren []layout.FlexChild
-							for _, w := range children {
-								flexChildren = append(flexChildren, layout.Rigid(w))
-							}
-
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								flexChildren...,
-							)
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									flexChildren...,
+								)
+							})
 						})
 					})
 			}))

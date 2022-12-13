@@ -8,7 +8,6 @@ import (
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
-	"hkapp/applayout"
 	"hkapp/application"
 	"image/color"
 )
@@ -189,9 +188,6 @@ func (s *Switch) Layout(gtx C) D {
 		Width:        unit.Dp(1),
 		CornerRadius: unit.Dp(1),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-		return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
-			material.Body1(s.th, s.label).Layout,
-			material.Switch(s.th, &s.Bool, s.label).Layout,
-		)
+		return material.Switch(s.th, &s.Bool, s.label).Layout(gtx)
 	})
 }
