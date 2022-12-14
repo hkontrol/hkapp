@@ -2,9 +2,11 @@ package service_cards
 
 import (
 	"errors"
+	"fmt"
 	"hkapp/applayout"
 	"hkapp/application"
 	"image/color"
+	"math"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -17,15 +19,21 @@ import (
 type LightBulb struct {
 	quick bool // simplified version to display in list of accs
 
-	widget.Bool
+	on               widget.Bool
+	quickOn          widget.Bool // for quick widget
+	brightnessWidget widget.Float
+	brightnessValue  float32
+
+	chars map[hkontroller.HapCharacteristicType]*hkontroller.CharacteristicDescription
+
+	hapEvents map[hkontroller.HapCharacteristicType]<-chan emitter.Event
+	guiEvents map[hkontroller.HapCharacteristicType]<-chan emitter.Event
 
 	label string
 
 	acc *hkontroller.Accessory
 	dev *hkontroller.Device
 	th  *material.Theme
-
-	events <-chan emitter.Event
 
 	*application.App
 }
@@ -36,11 +44,14 @@ func NewLightBulb(app *application.App,
 	quickWidget bool) (*LightBulb, error) {
 
 	l := &LightBulb{
-		quick: quickWidget,
-		acc:   acc,
-		dev:   dev,
-		th:    app.Theme,
-		App:   app,
+		quick:     quickWidget,
+		acc:       acc,
+		dev:       dev,
+		th:        app.Theme,
+		App:       app,
+		chars:     make(map[hkontroller.HapCharacteristicType]*hkontroller.CharacteristicDescription),
+		hapEvents: make(map[hkontroller.HapCharacteristicType]<-chan emitter.Event),
+		guiEvents: make(map[hkontroller.HapCharacteristicType]<-chan emitter.Event),
 	}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
@@ -64,35 +75,41 @@ func NewLightBulb(app *application.App,
 	onC := lightbS.GetCharacteristic(hkontroller.CType_On)
 	if onC == nil {
 		return nil, errors.New("cannot find characteristic On")
-	}
-
-	convertOnValue := func(value interface{}, ll *LightBulb) {
-		onValue, ok := value.(bool)
-		if !ok {
-			var onValInt float64
-			onValInt, ok = value.(float64)
-			if ok {
-				onValue = onValInt > 0
-			}
-		}
-		ll.Bool = widget.Bool{Value: onValue}
-	}
-
-	withValOnC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
-	if err == nil {
-		convertOnValue(withValOnC.Value, l)
 	} else {
-		convertOnValue(onC.Value, l)
+		l.chars[hkontroller.CType_On] = onC
+		withValC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
+		if err == nil {
+			l.onValue(withValC.Value, hkontroller.CType_On)
+		}
 	}
-	if !ok {
-		convertOnValue(false, l)
+
+	// optional characteristics
+	brightnessC := lightbS.GetCharacteristic(hkontroller.CType_Brightness)
+	if brightnessC != nil {
+		l.chars[hkontroller.CType_Brightness] = brightnessC
+		withValC, err := dev.GetCharacteristic(acc.Id, brightnessC.Iid)
+		if err == nil {
+			l.onValue(withValC.Value, hkontroller.CType_Brightness)
+		}
+	}
+	hueC := lightbS.GetCharacteristic(hkontroller.CType_Hue)
+	if hueC != nil {
+		l.chars[hkontroller.CType_Hue] = hueC
+	}
+	satC := lightbS.GetCharacteristic(hkontroller.CType_Saturation)
+	if hueC != nil {
+		l.chars[hkontroller.CType_Saturation] = satC
+	}
+	ctempC := lightbS.GetCharacteristic(hkontroller.CType_ColorTemperature)
+	if hueC != nil {
+		l.chars[hkontroller.CType_ColorTemperature] = ctempC
 	}
 
 	return l, nil
 }
 
-func (l *LightBulb) SubscribeToEvents() {
-	convertOnValue := func(value interface{}, sw *LightBulb) {
+func (l *LightBulb) onValue(value interface{}, ctype hkontroller.HapCharacteristicType) {
+	if ctype == hkontroller.CType_On {
 		onValue, ok := value.(bool)
 		if !ok {
 			var onValInt float64
@@ -101,82 +118,112 @@ func (l *LightBulb) SubscribeToEvents() {
 				onValue = onValInt > 0
 			}
 		}
-		sw.Bool = widget.Bool{Value: onValue}
+		l.on = widget.Bool{Value: onValue}
+		l.quickOn = widget.Bool{Value: onValue}
 	}
-	lbS := l.acc.GetService(hkontroller.SType_LightBulb)
-	if lbS == nil {
-		return
+	if ctype == hkontroller.CType_Brightness {
+		if valInt, ok := value.(int); ok {
+			l.brightnessWidget.Value = float32(valInt)
+		} else if valF32, ok := value.(float32); ok {
+			l.brightnessWidget.Value = valF32
+		} else if valF64, ok := value.(float64); ok {
+			l.brightnessWidget.Value = float32(valF64)
+		}
 	}
-	onC := lbS.GetCharacteristic(hkontroller.CType_On)
-	if onC == nil {
-		return
-	}
+}
 
-	onEvent := func(e emitter.Event) {
+func (l *LightBulb) SubscribeToEvents() {
+
+	var err error
+	var ev <-chan emitter.Event
+	devId := l.dev.Id
+	aid := l.acc.Id
+	onEvent := func(e emitter.Event, ctype hkontroller.HapCharacteristicType) {
 		value := e.Args[2]
-		convertOnValue(value, l)
+		l.onValue(value, ctype)
 		l.App.Window.Invalidate()
 	}
-	events, err := l.dev.SubscribeToEvents(l.acc.Id, onC.Iid)
-	if err != nil {
-		return
-	}
-	l.events = events
-	go func(evs <-chan emitter.Event) {
-		for e := range evs {
-			onEvent(e)
+	for ctype, cdescr := range l.chars {
+		iid := cdescr.Iid
+		ev, err = l.dev.SubscribeToEvents(aid, iid)
+		if err != nil {
+			fmt.Println("err subscribing: ", cdescr.Type.String(), err)
+			continue
 		}
-	}(events)
+		go func(evs <-chan emitter.Event, ct hkontroller.HapCharacteristicType) {
+			for e := range evs {
+				onEvent(e, ct)
+			}
+		}(ev, ctype)
+		l.hapEvents[ctype] = ev
 
-	// hapEvents from GUI
-	vals := l.App.OnValueChange(l.dev.Id, l.acc.Id, onC.Iid)
-	go func(evs <-chan emitter.Event) {
-		for e := range evs {
-			onEvent(e)
-		}
-	}(vals)
+		ev = l.App.OnValueChange(devId, aid, iid)
+		l.guiEvents[ctype] = ev
+		go func(evs <-chan emitter.Event, ct hkontroller.HapCharacteristicType) {
+			for e := range evs {
+				onEvent(e, ct)
+			}
+		}(ev, ctype)
+	}
 }
 func (l *LightBulb) UnsubscribeFromEvents() {
-	lbS := l.acc.GetService(hkontroller.SType_LightBulb)
-	if lbS == nil {
-		return
+	aid := l.acc.Id
+	devId := l.dev.Id
+	for ctype, ee := range l.hapEvents {
+		iid := l.chars[ctype].Iid
+		err := l.dev.UnsubscribeFromEvents(aid, iid, ee)
+		if err != nil {
+			continue
+		}
+		delete(l.hapEvents, ctype)
 	}
-	onC := lbS.GetCharacteristic(hkontroller.CType_On)
-	if onC == nil {
-		return
+	for ctype, ee := range l.guiEvents {
+		iid := l.chars[ctype].Iid
+		l.App.OffValueChange(devId, aid, iid, ee)
+		delete(l.hapEvents, ctype)
 	}
-	l.dev.UnsubscribeFromEvents(l.acc.Id, onC.Iid, l.events)
+	return
 }
+
 func (l *LightBulb) QuickAction() {
-	l.Bool.Value = !l.Bool.Value
-	l.OnBoolValueChanged()
+	l.on.Value = !l.on.Value
+	l.quickOn.Value = !l.on.Value
+	l.onBoolValueChanged()
 }
 
-func (l *LightBulb) OnBoolValueChanged() error {
+func (l *LightBulb) onBoolValueChanged() error {
 
-	srv := l.acc.GetService(hkontroller.SType_LightBulb)
-	if srv == nil {
-		return errors.New("cannot find LightBulb service")
-	}
-	chr := srv.GetCharacteristic(hkontroller.CType_On)
-	if chr == nil {
-		return errors.New("cannot find On characteristic")
-	}
-
-	err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, l.Bool.Value)
+	chr := l.chars[hkontroller.CType_On]
+	err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, l.on.Value)
 	if err != nil {
 		return err
 	}
 
-	l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.Bool.Value)
+	l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.on.Value)
+
+	return nil
+}
+func (l *LightBulb) onBrightnessSlider() error {
+	chr := l.chars[hkontroller.CType_Brightness]
+	val := math.Floor(float64(l.brightnessWidget.Value))
+	err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, val)
+	if err != nil {
+		return err
+	}
+
+	l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
 
 	return nil
 }
 
 func (l *LightBulb) Layout(gtx C) D {
 
-	if l.Bool.Changed() {
-		l.OnBoolValueChanged()
+	if l.brightnessWidget.Changed() {
+		l.onBrightnessSlider()
+	}
+
+	if l.on.Changed() {
+		l.onBoolValueChanged()
 	}
 
 	return widget.Border{
@@ -190,11 +237,40 @@ func (l *LightBulb) Layout(gtx C) D {
 		CornerRadius: unit.Dp(1),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		if l.quick {
-			return material.Switch(l.th, &l.Bool, l.label).Layout(gtx)
+			var children []layout.FlexChild
+			children = append(children,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return material.Switch(l.th, &l.quickOn, l.label).Layout(gtx)
+				}))
+			if _, ok := l.chars[hkontroller.CType_Brightness]; ok {
+				brStr := fmt.Sprintf(" B: %d",
+					int(math.Floor(float64(l.brightnessWidget.Value))))
+				children = append(children,
+					layout.Rigid(material.Body1(l.th, brStr).Layout))
+			}
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				children...,
+			)
+
 		} else {
-			return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
-				material.Body1(l.th, l.label).Layout,
-				material.Switch(l.th, &l.Bool, l.label).Layout)
+
+			var children []layout.FlexChild
+			children = append(children,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
+						material.Body1(l.th, l.label).Layout,
+						material.Switch(l.th, &l.on, l.label).Layout)
+				}))
+
+			if _, ok := l.chars[hkontroller.CType_Brightness]; ok {
+				children = append(children,
+					layout.Rigid(material.Slider(l.th, &l.brightnessWidget, 0, 100).Layout))
+			}
+
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				children...,
+			)
+
 		}
 	})
 }
