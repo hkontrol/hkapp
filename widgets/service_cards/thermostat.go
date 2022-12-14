@@ -284,6 +284,8 @@ func (t *Thermostat) Layout(gtx C) D {
 	cmodeStr := currentMode2str(cmode)
 	tmodeStr := targetMode2enum(tmode)
 
+	// TODO optional chars
+
 	if t.quick {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -354,7 +356,6 @@ func currentMode2str(v interface{}) string {
 	}
 	return valStr
 }
-
 func targetMode2enum(v interface{}) string {
 	valStr := ""
 	if m, ok := v.(float64); ok {

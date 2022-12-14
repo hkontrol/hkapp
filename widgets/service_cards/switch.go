@@ -196,7 +196,7 @@ func (s *Switch) Layout(gtx C) D {
 			R: 0,
 			G: 0,
 			B: 0,
-			A: 64,
+			A: 0,
 		},
 		Width:        unit.Dp(1),
 		CornerRadius: unit.Dp(1),

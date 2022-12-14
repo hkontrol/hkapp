@@ -1,7 +1,15 @@
 package accessories
 
 import (
-	"fmt"
+	"hkapp/application"
+	"hkapp/icon"
+	page "hkapp/pages"
+	"hkapp/widgets"
+	"hkapp/widgets/accessory_card"
+	"hkapp/widgets/accessory_page"
+	"sync"
+	"time"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -9,13 +17,6 @@ import (
 	"gioui.org/x/component"
 	"gioui.org/x/outlay"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/application"
-	"hkapp/icon"
-	page "hkapp/pages"
-	"hkapp/widgets"
-	"hkapp/widgets/accessory_card"
-	"hkapp/widgets/accessory_page"
-	"time"
 )
 
 type (
@@ -34,6 +35,7 @@ type Page struct {
 	widget.List
 	outlay.FlowWrap
 
+	mu    sync.Mutex
 	accs  []DeviceAccPair
 	cards []*accessory_card.AccessoryCard
 
@@ -58,6 +60,7 @@ type Page struct {
 func New(app *application.App) *Page {
 	return &Page{
 		App:            app,
+		mu:             sync.Mutex{},
 		th:             app.Theme,
 		selectedAccIdx: -1,
 		FlowWrap: outlay.FlowWrap{
@@ -72,17 +75,14 @@ var _ page.Page = &Page{}
 func (p *Page) Update() {
 	devices := p.App.Manager.GetVerifiedDevices()
 
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	p.accs = []DeviceAccPair{}
 	p.clickables = []widgets.LongClickable{}
 	p.cards = []*accessory_card.AccessoryCard{}
 
 	for _, d := range devices {
-		err := d.GetAccessories()
-		if err != nil {
-			fmt.Println("discover accs err: ", err)
-			continue
-		}
-
 		accs := d.Accessories()
 		for _, a := range accs {
 			p.accs = append(p.accs, DeviceAccPair{Device: d, Accessory: a})
@@ -140,6 +140,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		p.App.Window.Invalidate()
 	}
 
+	p.mu.Lock()
 	for i := range p.clickables {
 
 		for p.clickables[i].ShortClick() {
@@ -156,6 +157,8 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		}
 
 	}
+	p.mu.Unlock()
+
 	for p.closeSelectedAcc.Clicked() || p.closeSelectedAccIcon.Clicked() {
 		p.selectedAccIdx = -1
 		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
@@ -178,6 +181,8 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 						p.List.Axis = layout.Vertical
 						listStyle := material.List(p.th, &p.List)
 
+						p.mu.Lock()
+						defer p.mu.Unlock()
 						return listStyle.Layout(gtx, 1, func(gtx C, i int) D {
 							return p.FlowWrap.Layout(gtx, len(p.accs), func(gtx C, i int) D {
 								if i >= len(p.accs) {
