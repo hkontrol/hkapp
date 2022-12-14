@@ -1,12 +1,13 @@
 package accessory_page
 
 import (
+	"hkapp/application"
+	"hkapp/widgets/service_cards"
+
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/application"
-	"hkapp/widgets/service_cards"
 )
 
 type (
@@ -49,7 +50,7 @@ func NewAccessoryPage(app *application.App, acc *hkontroller.Accessory, dev *hko
 		}, 0, len(acc.Ss))
 
 	for _, s := range acc.Ss {
-		w, err := service_cards.GetWidgetForService(app, acc, dev, s)
+		w, err := service_cards.GetWidgetForService(app, acc, dev, s, false)
 		if err != nil {
 			continue
 		}

@@ -2,18 +2,21 @@ package service_cards
 
 import (
 	"errors"
+	"hkapp/applayout"
+	"hkapp/application"
+	"image/color"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
-	"hkapp/applayout"
-	"hkapp/application"
-	"image/color"
 )
 
 type AccessoryInfo struct {
+	quick bool // simplified version to display in list of accs
+
 	widget.List
 
 	manufacturer string
@@ -31,9 +34,18 @@ type AccessoryInfo struct {
 	*application.App
 }
 
-func NewAccessoryInfo(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*AccessoryInfo, error) {
+func NewAccessoryInfo(app *application.App,
+	acc *hkontroller.Accessory,
+	dev *hkontroller.Device,
+	quickWidget bool) (*AccessoryInfo, error) {
 
-	i := &AccessoryInfo{acc: acc, dev: dev, th: app.Theme, App: app}
+	i := &AccessoryInfo{
+		quick: quickWidget,
+		acc:   acc,
+		dev:   dev,
+		th:    app.Theme,
+		App:   app,
+	}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {

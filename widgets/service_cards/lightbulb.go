@@ -3,18 +3,21 @@ package service_cards
 import (
 	"errors"
 	"fmt"
+	"hkapp/applayout"
+	"hkapp/application"
+	"image/color"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
-	"hkapp/applayout"
-	"hkapp/application"
-	"image/color"
 )
 
 type LightBulb struct {
+	quick bool // simplified version to display in list of accs
+
 	widget.Bool
 
 	label string
@@ -28,9 +31,18 @@ type LightBulb struct {
 	*application.App
 }
 
-func NewLightBulb(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*LightBulb, error) {
+func NewLightBulb(app *application.App,
+	acc *hkontroller.Accessory,
+	dev *hkontroller.Device,
+	quickWidget bool) (*LightBulb, error) {
 
-	l := &LightBulb{acc: acc, dev: dev, th: app.Theme, App: app}
+	l := &LightBulb{
+		quick: quickWidget,
+		acc:   acc,
+		dev:   dev,
+		th:    app.Theme,
+		App:   app,
+	}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {

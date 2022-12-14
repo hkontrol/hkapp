@@ -2,17 +2,21 @@ package service_cards
 
 import (
 	"errors"
+	"hkapp/applayout"
+	"hkapp/application"
+	"image/color"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
-	"hkapp/application"
-	"image/color"
 )
 
 type Switch struct {
+	quick bool // simplified version to display in list of accs
+
 	widget.Bool
 
 	label string
@@ -28,8 +32,17 @@ type Switch struct {
 	*application.App
 }
 
-func NewSwitch(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*Switch, error) {
-	s := &Switch{acc: acc, dev: dev, th: app.Theme, App: app}
+func NewSwitch(app *application.App,
+	acc *hkontroller.Accessory,
+	dev *hkontroller.Device,
+	quickWidget bool) (*Switch, error) {
+	s := &Switch{
+		quick: quickWidget,
+		acc:   acc,
+		dev:   dev,
+		th:    app.Theme,
+		App:   app,
+	}
 
 	infoS := acc.GetService(hkontroller.SType_AccessoryInfo)
 	if infoS == nil {
@@ -188,6 +201,12 @@ func (s *Switch) Layout(gtx C) D {
 		Width:        unit.Dp(1),
 		CornerRadius: unit.Dp(1),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-		return material.Switch(s.th, &s.Bool, s.label).Layout(gtx)
+		if s.quick {
+			return material.Switch(s.th, &s.Bool, s.label).Layout(gtx)
+		} else {
+			return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
+				material.Body1(s.th, s.label).Layout,
+				material.Switch(s.th, &s.Bool, s.label).Layout)
+		}
 	})
 }

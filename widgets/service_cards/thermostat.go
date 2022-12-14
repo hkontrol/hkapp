@@ -30,6 +30,8 @@ Optional Characteristics
 */
 
 type Thermostat struct {
+	quick bool // simplified version to display in list of accs
+
 	label string
 
 	acc *hkontroller.Accessory
@@ -62,8 +64,12 @@ type Thermostat struct {
 	*application.App
 }
 
-func NewThermostat(app *application.App, acc *hkontroller.Accessory, dev *hkontroller.Device) (*Thermostat, error) {
+func NewThermostat(app *application.App,
+	acc *hkontroller.Accessory,
+	dev *hkontroller.Device,
+	quickWidget bool) (*Thermostat, error) {
 	t := &Thermostat{
+		quick:     quickWidget,
 		App:       app,
 		acc:       acc,
 		dev:       dev,
@@ -291,30 +297,56 @@ func (t *Thermostat) Layout(gtx C) D {
 	cmode := t.chars[hkontroller.CType_CurrentHeatingCoolingState].Value
 	tmode := t.chars[hkontroller.CType_TargetHeatingCoolingState].Value
 
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Current t: %v | ", ctemp)).Layout),
-				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Target t: %v", ttemp)).Layout),
-			)
-		}),
-		layout.Rigid(material.Slider(t.th, &t.targetTempFloatWidget, 10, 38).Layout),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "off", "Off").Layout),
-				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "heat", "Heat").Layout),
-				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "cool", "Cool").Layout),
-				layout.Rigid(material.RadioButton(t.th, &t.targetModeEnum, "auto", "Auto").Layout),
-			)
-		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Current mode: %v | ", cmode)).Layout),
-				layout.Rigid(material.Body1(t.th, fmt.Sprintf("Target mode: %v", tmode)).Layout),
-			)
-		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{}.Layout(gtx)
-		}),
-	)
+	if t.quick {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Current t: %v | ", ctemp)).Layout),
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Target t: %v", ttemp)).Layout),
+				)
+			}),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Current mode: %v | ", cmode)).Layout),
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Target mode: %v", tmode)).Layout),
+				)
+			}),
+		)
+	} else {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Current t: %v | ", ctemp)).Layout),
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Target t: %v", ttemp)).Layout),
+				)
+			}),
+			layout.Rigid(material.Slider(t.th, &t.targetTempFloatWidget, 10, 38).Layout),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(material.RadioButton(t.th,
+						&t.targetModeEnum, "off", "Off").Layout),
+					layout.Rigid(material.RadioButton(t.th,
+						&t.targetModeEnum, "heat", "Heat").Layout),
+					layout.Rigid(material.RadioButton(t.th,
+						&t.targetModeEnum, "cool", "Cool").Layout),
+					layout.Rigid(material.RadioButton(t.th,
+						&t.targetModeEnum, "auto", "Auto").Layout),
+				)
+			}),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Current mode: %v | ", cmode)).Layout),
+					layout.Rigid(material.Body1(t.th,
+						fmt.Sprintf("Target mode: %v", tmode)).Layout),
+				)
+			}),
+		)
+	}
 }

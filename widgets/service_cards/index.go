@@ -1,10 +1,11 @@
 package service_cards
 
 import (
+	"hkapp/application"
+
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/application"
 )
 
 type (
@@ -23,6 +24,7 @@ func (t withLayoutFunc) Layout(gtx C) D {
 func GetWidgetForService(app *application.App,
 	acc *hkontroller.Accessory, dev *hkontroller.Device,
 	s *hkontroller.ServiceDescription,
+	quickWidget bool,
 ) (interface {
 	Layout(C) D
 }, error) {
@@ -46,13 +48,13 @@ func GetWidgetForService(app *application.App,
 
 	switch s.Type {
 	case hkontroller.SType_LightBulb:
-		w, err = NewLightBulb(app, acc, dev)
+		w, err = NewLightBulb(app, acc, dev, quickWidget)
 	case hkontroller.SType_Switch:
-		w, err = NewSwitch(app, acc, dev)
+		w, err = NewSwitch(app, acc, dev, quickWidget)
 	case hkontroller.SType_AccessoryInfo:
-		w, err = NewAccessoryInfo(app, acc, dev)
+		w, err = NewAccessoryInfo(app, acc, dev, quickWidget)
 	case hkontroller.SType_Thermostat:
-		w, err = NewThermostat(app, acc, dev)
+		w, err = NewThermostat(app, acc, dev, quickWidget)
 	default:
 		w = material.Body2(app.Theme, label)
 	}

@@ -1,15 +1,16 @@
 package accessory_card
 
 import (
+	"hkapp/application"
+	"hkapp/widgets"
+	"hkapp/widgets/service_cards"
+	"image/color"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/application"
-	"hkapp/widgets"
-	"hkapp/widgets/service_cards"
-	"image/color"
 )
 
 type (
@@ -58,7 +59,7 @@ func NewAccessoryCard(app *application.App, acc *hkontroller.Accessory, dev *hko
 	if primary != nil {
 		// TODO: GetQuickWidgetForService
 		// 		  so widgets for full version and quick version differs
-		w, err := service_cards.GetWidgetForService(app, acc, dev, primary)
+		w, err := service_cards.GetWidgetForService(app, acc, dev, primary, true)
 		if err == nil {
 			primaryWidget = w
 		}
