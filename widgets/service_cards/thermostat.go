@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"hkapp/application"
+	"math"
 
 	"gioui.org/widget"
 
@@ -161,7 +162,8 @@ func NewThermostat(app *application.App,
 	return t, nil
 }
 
-func (t *Thermostat) onValue(value interface{}, ctype hkontroller.HapCharacteristicType) {
+func (t *Thermostat) onValue(value interface{},
+	ctype hkontroller.HapCharacteristicType) {
 
 	t.chars[ctype].Value = value
 	if ctype == hkontroller.CType_TargetTemperature {
@@ -175,27 +177,16 @@ func (t *Thermostat) onValue(value interface{}, ctype hkontroller.HapCharacteris
 		}
 	}
 	if ctype == hkontroller.CType_TargetHeatingCoolingState {
-		var valInt int
-		if vi, ok := value.(int); ok {
-			valInt = vi
-		} else if vf, ok := value.(float64); ok {
-			valInt = int(vf)
+		var valNum float64
+		if vf, ok := value.(float64); ok {
+			valNum = vf
+		} else if vi, ok := value.(int); ok {
+			valNum = float64(vi)
 		} else {
 			return
 		}
 
-		valStr := "off"
-		switch valInt {
-		case 0:
-			valStr = "off"
-		case 1:
-			valStr = "heat"
-		case 2:
-			valStr = "cool"
-		case 3:
-			valStr = "auto"
-		}
-		t.targetModeEnum.Value = valStr
+		t.targetModeEnum.Value = targetMode2enum(valNum)
 	}
 }
 
@@ -214,7 +205,8 @@ func (t *Thermostat) SubscribeToEvents() {
 		iid := cdescr.Iid
 		ev, err = t.dev.SubscribeToEvents(aid, iid)
 		if err != nil {
-			return
+			fmt.Println("err subscribing: ", cdescr.Type.String(), err)
+			continue
 		}
 		go func(evs <-chan emitter.Event, ct hkontroller.HapCharacteristicType) {
 			for e := range evs {
@@ -263,6 +255,8 @@ func (t *Thermostat) Layout(gtx C) D {
 		}
 		// TODO: timeout to prevent change on drag
 		val := float64(t.targetTempFloatWidget.Value)
+		// one digit after point
+		val = math.Floor(val*10) / 10
 
 		ctype := hkontroller.CType_TargetTemperature
 		err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, val)
@@ -273,29 +267,22 @@ func (t *Thermostat) Layout(gtx C) D {
 	}
 	for t.targetModeEnum.Changed() {
 		valStr := t.targetModeEnum.Value
-		valInt := 0
-		switch valStr {
-		case "off":
-			valInt = 0
-		case "heat":
-			valInt = 1
-		case "cool":
-			valInt = 2
-		case "auto":
-			valInt = 3
-		}
+		valNum := targetMode2num(valStr)
 		ctype := hkontroller.CType_TargetHeatingCoolingState
-		err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, valInt)
+		err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, valNum)
 		if err != nil {
 			return D{}
 		}
-		t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, valInt)
+		t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, valNum)
 	}
 
 	ctemp := t.chars[hkontroller.CType_CurrentTemperature].Value
 	ttemp := t.chars[hkontroller.CType_TargetTemperature].Value
 	cmode := t.chars[hkontroller.CType_CurrentHeatingCoolingState].Value
 	tmode := t.chars[hkontroller.CType_TargetHeatingCoolingState].Value
+
+	cmodeStr := currentMode2str(cmode)
+	tmodeStr := targetMode2enum(tmode)
 
 	if t.quick {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -310,9 +297,9 @@ func (t *Thermostat) Layout(gtx C) D {
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Current mode: %v | ", cmode)).Layout),
+						fmt.Sprintf("Current mode: %v | ", cmodeStr)).Layout),
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Target mode: %v", tmode)).Layout),
+						fmt.Sprintf("Target mode: %v", tmodeStr)).Layout),
 				)
 			}),
 		)
@@ -342,11 +329,61 @@ func (t *Thermostat) Layout(gtx C) D {
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Current mode: %v | ", cmode)).Layout),
+						fmt.Sprintf("Current mode: %v | ", cmodeStr)).Layout),
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Target mode: %v", tmode)).Layout),
+						fmt.Sprintf("Target mode: %v", tmodeStr)).Layout),
 				)
 			}),
 		)
 	}
+}
+
+// util
+// ------------------
+func currentMode2str(v interface{}) string {
+	valStr := "unknown"
+	if m, ok := v.(float64); ok {
+		switch m {
+		case 0:
+			valStr = "off"
+		case 1:
+			valStr = "heat"
+		case 2:
+			valStr = "cool"
+		}
+	}
+	return valStr
+}
+
+func targetMode2enum(v interface{}) string {
+	valStr := ""
+	if m, ok := v.(float64); ok {
+		switch m {
+		case 0:
+			valStr = "off"
+		case 1:
+			valStr = "heat"
+		case 2:
+			valStr = "cool"
+		case 3:
+			valStr = "auto"
+		}
+	}
+	return valStr
+}
+func targetMode2num(v interface{}) float64 {
+	valNum := float64(0)
+	if valStr, ok := v.(string); ok {
+		switch valStr {
+		case "off":
+			valNum = 0
+		case "heat":
+			valNum = 1
+		case "cool":
+			valNum = 2
+		case "auto":
+			valNum = 3
+		}
+	}
+	return valNum
 }
