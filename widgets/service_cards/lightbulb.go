@@ -2,7 +2,6 @@ package service_cards
 
 import (
 	"errors"
-	"fmt"
 	"hkapp/applayout"
 	"hkapp/application"
 	"image/color"
@@ -148,11 +147,36 @@ func (l *LightBulb) UnsubscribeFromEvents() {
 	}
 	l.dev.UnsubscribeFromEvents(l.acc.Id, onC.Iid, l.events)
 }
+func (l *LightBulb) QuickAction() {
+	l.Bool.Value = !l.Bool.Value
+	l.OnBoolValueChanged()
+}
 
-func (s *LightBulb) Layout(gtx C) D {
+func (l *LightBulb) OnBoolValueChanged() error {
 
-	if s.Bool.Changed() {
-		fmt.Println("changed ", s.Bool.Value)
+	srv := l.acc.GetService(hkontroller.SType_LightBulb)
+	if srv == nil {
+		return errors.New("cannot find LightBulb service")
+	}
+	chr := srv.GetCharacteristic(hkontroller.CType_On)
+	if chr == nil {
+		return errors.New("cannot find On characteristic")
+	}
+
+	err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, l.Bool.Value)
+	if err != nil {
+		return err
+	}
+
+	l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.Bool.Value)
+
+	return nil
+}
+
+func (l *LightBulb) Layout(gtx C) D {
+
+	if l.Bool.Changed() {
+		l.OnBoolValueChanged()
 	}
 
 	return widget.Border{
@@ -165,9 +189,12 @@ func (s *LightBulb) Layout(gtx C) D {
 		Width:        unit.Dp(1),
 		CornerRadius: unit.Dp(1),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-		return applayout.DetailRow{}.Layout(gtx,
-			material.Body1(s.th, s.label).Layout,
-			material.Switch(s.th, &s.Bool, s.label).Layout,
-		)
+		if l.quick {
+			return material.Switch(l.th, &l.Bool, l.label).Layout(gtx)
+		} else {
+			return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
+				material.Body1(l.th, l.label).Layout,
+				material.Switch(l.th, &l.Bool, l.label).Layout)
+		}
 	})
 }
