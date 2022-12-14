@@ -17,7 +17,8 @@ import (
 type Switch struct {
 	quick bool // simplified version to display in list of accs
 
-	widget.Bool
+	on      widget.Bool
+	quickOn widget.Bool
 
 	label string
 
@@ -76,7 +77,8 @@ func NewSwitch(app *application.App,
 				onValue = onValInt > 0
 			}
 		}
-		sw.Bool = widget.Bool{Value: onValue}
+		sw.on = widget.Bool{Value: onValue}
+		sw.quickOn = widget.Bool{Value: onValue}
 	}
 	withValOnC, err := dev.GetCharacteristic(acc.Id, onC.Iid)
 	if err == nil {
@@ -101,7 +103,8 @@ func (s *Switch) SubscribeToEvents() {
 				onValue = onValInt > 0
 			}
 		}
-		sw.Bool = widget.Bool{Value: onValue}
+		sw.on.Value = onValue
+		sw.quickOn.Value = onValue
 	}
 	switchS := s.acc.GetService(hkontroller.SType_Switch)
 	if switchS == nil {
@@ -155,11 +158,11 @@ func (s *Switch) UnsubscribeFromEvents() {
 }
 
 func (s *Switch) QuickAction() {
-	s.Bool.Value = !s.Bool.Value
-	s.OnBoolValueChanged()
+	s.on.Value = !s.on.Value
+	s.onBoolValueChanged()
 }
 
-func (s *Switch) OnBoolValueChanged() error {
+func (s *Switch) onBoolValueChanged() error {
 
 	srv := s.acc.GetService(hkontroller.SType_Switch)
 	if srv == nil {
@@ -170,12 +173,12 @@ func (s *Switch) OnBoolValueChanged() error {
 		return errors.New("cannot find On characteristic")
 	}
 
-	err := s.dev.PutCharacteristic(s.acc.Id, chr.Iid, s.Bool.Value)
+	err := s.dev.PutCharacteristic(s.acc.Id, chr.Iid, s.on.Value)
 	if err != nil {
 		return err
 	}
 
-	s.App.EmitValueChange(s.dev.Id, s.acc.Id, chr.Iid, s.Bool.Value)
+	s.App.EmitValueChange(s.dev.Id, s.acc.Id, chr.Iid, s.on.Value)
 
 	return nil
 }
@@ -183,8 +186,8 @@ func (s *Switch) OnBoolValueChanged() error {
 func (s *Switch) Layout(gtx C) D {
 
 	var err error
-	if s.Bool.Changed() {
-		err = s.OnBoolValueChanged()
+	if s.on.Changed() {
+		err = s.onBoolValueChanged()
 	}
 
 	if err != nil {
@@ -202,11 +205,11 @@ func (s *Switch) Layout(gtx C) D {
 		CornerRadius: unit.Dp(1),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		if s.quick {
-			return material.Switch(s.th, &s.Bool, s.label).Layout(gtx)
+			return material.Switch(s.th, &s.quickOn, s.label).Layout(gtx)
 		} else {
 			return applayout.DetailRow{PrimaryWidth: 0.8}.Layout(gtx,
 				material.Body1(s.th, s.label).Layout,
-				material.Switch(s.th, &s.Bool, s.label).Layout)
+				material.Switch(s.th, &s.on, s.label).Layout)
 		}
 	})
 }
