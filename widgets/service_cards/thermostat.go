@@ -291,17 +291,17 @@ func (t *Thermostat) Layout(gtx C) D {
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Current t: %v | ", ctemp)).Layout),
+						fmt.Sprintf("Temp: %v | ", ctemp)).Layout),
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Target t: %v", ttemp)).Layout),
+						fmt.Sprintf("Target: %v", ttemp)).Layout),
 				)
 			}),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Current mode: %v | ", cmodeStr)).Layout),
+						fmt.Sprintf("Mode: %v | ", cmodeStr)).Layout),
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Target mode: %v", tmodeStr)).Layout),
+						fmt.Sprintf("Target: %v", tmodeStr)).Layout),
 				)
 			}),
 		)
@@ -310,9 +310,9 @@ func (t *Thermostat) Layout(gtx C) D {
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Current t: %v | ", ctemp)).Layout),
+						fmt.Sprintf("Temp: %v | ", ctemp)).Layout),
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Target t: %v", ttemp)).Layout),
+						fmt.Sprintf("Target: %v", ttemp)).Layout),
 				)
 			}),
 			layout.Rigid(material.Slider(t.th, &t.targetTempFloatWidget, 10, 38).Layout),
@@ -331,9 +331,9 @@ func (t *Thermostat) Layout(gtx C) D {
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Current mode: %v | ", cmodeStr)).Layout),
+						fmt.Sprintf("Mode: %v | ", cmodeStr)).Layout),
 					layout.Rigid(material.Body1(t.th,
-						fmt.Sprintf("Target mode: %v", tmodeStr)).Layout),
+						fmt.Sprintf("Target: %v", tmodeStr)).Layout),
 				)
 			}),
 		)
