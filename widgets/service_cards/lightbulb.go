@@ -7,6 +7,7 @@ import (
 	"hkapp/application"
 	"image/color"
 	"math"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -16,6 +17,8 @@ import (
 	"github.com/olebedev/emitter"
 )
 
+const brightnessDragDelay = 300 * time.Millisecond
+
 type LightBulb struct {
 	quick bool // simplified version to display in list of accs
 
@@ -23,6 +26,8 @@ type LightBulb struct {
 	quickOn          widget.Bool // for quick widget
 	brightnessWidget widget.Float
 	brightnessValue  float32
+
+	dragTimer *time.Timer
 
 	chars map[hkontroller.HapCharacteristicType]*hkontroller.CharacteristicDescription
 
@@ -203,14 +208,15 @@ func (l *LightBulb) onBoolValueChanged() error {
 	return nil
 }
 func (l *LightBulb) onBrightnessSlider() error {
-	chr := l.chars[hkontroller.CType_Brightness]
-	val := math.Floor(float64(l.brightnessWidget.Value))
-	err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, val)
-	if err != nil {
-		return err
+	if l.dragTimer != nil {
+		l.dragTimer.Stop()
 	}
-
-	l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
+	l.dragTimer = time.AfterFunc(brightnessDragDelay, func() {
+		chr := l.chars[hkontroller.CType_Brightness]
+		val := math.Floor(float64(l.brightnessWidget.Value))
+		l.dev.PutCharacteristic(l.acc.Id, chr.Iid, val)
+		l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
+	})
 
 	return nil
 }

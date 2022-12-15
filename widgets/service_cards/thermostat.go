@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hkapp/application"
 	"math"
+	"time"
 
 	"gioui.org/widget"
 
@@ -13,6 +14,8 @@ import (
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
 )
+
+const targetTempDragDelay = 300 * time.Millisecond
 
 /*
 Required Characteristics
@@ -59,6 +62,8 @@ type Thermostat struct {
 	targetModeEnum        widget.Enum
 	targetTempFloatWidget widget.Float
 	targetTempFloatValue  float32
+
+	dragTimer *time.Timer
 
 	th *material.Theme
 
@@ -253,17 +258,23 @@ func (t *Thermostat) Layout(gtx C) D {
 			t.targetTempFloatValue = t.targetTempFloatWidget.Value
 			continue
 		}
-		// TODO: timeout to prevent change on drag
-		val := float64(t.targetTempFloatWidget.Value)
-		// one digit after point
-		val = math.Floor(val*10) / 10
 
-		ctype := hkontroller.CType_TargetTemperature
-		err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, val)
-		if err != nil {
-			return D{}
+		if t.dragTimer != nil {
+			t.dragTimer.Stop()
 		}
-		t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, val)
+
+		// timer to prevent change on drag
+		t.dragTimer = time.AfterFunc(targetTempDragDelay, func() {
+			val := float64(t.targetTempFloatWidget.Value)
+			// one digit after point
+			val = math.Floor(val*10) / 10
+			ctype := hkontroller.CType_TargetTemperature
+			err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, float32(val))
+			if err != nil {
+				return
+			}
+			t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, float32(val))
+		})
 	}
 	for t.targetModeEnum.Changed() {
 		valStr := t.targetModeEnum.Value
