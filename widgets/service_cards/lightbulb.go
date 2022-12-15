@@ -118,8 +118,8 @@ func (l *LightBulb) onValue(value interface{}, ctype hkontroller.HapCharacterist
 				onValue = onValInt > 0
 			}
 		}
-		l.on = widget.Bool{Value: onValue}
-		l.quickOn = widget.Bool{Value: onValue}
+		l.on.Value = onValue
+		l.quickOn.Value = onValue
 	}
 	if ctype == hkontroller.CType_Brightness {
 		if valInt, ok := value.(int); ok {
@@ -187,7 +187,6 @@ func (l *LightBulb) UnsubscribeFromEvents() {
 
 func (l *LightBulb) QuickAction() {
 	l.on.Value = !l.on.Value
-	l.quickOn.Value = !l.on.Value
 	l.onBoolValueChanged()
 }
 
@@ -264,13 +263,27 @@ func (l *LightBulb) Layout(gtx C) D {
 
 			if _, ok := l.chars[hkontroller.CType_Brightness]; ok {
 				children = append(children,
+					layout.Rigid(material.Body1(l.th, "Brightness").Layout))
+				children = append(children,
 					layout.Rigid(material.Slider(l.th, &l.brightnessWidget, 0, 100).Layout))
+			}
+
+			if _, ok := l.chars[hkontroller.CType_Hue]; ok {
+				children = append(children,
+					layout.Rigid(material.Body1(l.th, "supports Hue").Layout))
+			}
+			if _, ok := l.chars[hkontroller.CType_Saturation]; ok {
+				children = append(children,
+					layout.Rigid(material.Body1(l.th, "supports Saturation").Layout))
+			}
+			if _, ok := l.chars[hkontroller.CType_ColorTemperature]; ok {
+				children = append(children,
+					layout.Rigid(material.Body1(l.th, "supports ColorTemperature").Layout))
 			}
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				children...,
 			)
-
 		}
 	})
 }
