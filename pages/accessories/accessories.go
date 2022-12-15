@@ -95,7 +95,7 @@ func (p *Page) Update() {
 		d := accdev.Device
 		p.clickables[i] = widgets.NewLongClickable(500 * time.Millisecond)
 		p.cards[i] = accessory_card.NewAccessoryCard(p.App, a, d, &p.clickables[i])
-		go p.cards[i].SubscribeToEvents()
+		p.cards[i].SubscribeToEvents()
 	}
 }
 
