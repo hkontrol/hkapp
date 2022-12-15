@@ -93,15 +93,17 @@ func (s *AccessoryCard) Layout(gtx C) D {
 		}),
 	)
 
-	servicesStr := ""
-	for _, srv := range s.acc.Ss {
-		servicesStr += srv.Type.String() + ", "
-	}
-	cardWidgets = append(cardWidgets,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			srvLabel := material.Body2(s.th, servicesStr)
-			return srvLabel.Layout(gtx)
-		}))
+	/*
+		servicesStr := ""
+		for _, srv := range s.acc.Ss {
+			servicesStr += srv.Type.String() + ", "
+		}
+		cardWidgets = append(cardWidgets,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				srvLabel := material.Body2(s.th, servicesStr)
+				return srvLabel.Layout(gtx)
+			}))
+	*/
 
 	if s.primaryWidget != nil {
 		cardWidgets = append(cardWidgets, layout.Rigid(s.primaryWidget.Layout))
