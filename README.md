@@ -22,5 +22,12 @@ to build apk:
 ANDROID_SDK_ROOT=$HOME/Android/Sdk/ gogio -target android -buildmode archive -x -appid tech.bobalus.hkapp ./
 ```
 
-copy `hkapp.aar` to `./android/app/libs` then open android dir in AndroidStudio and run build.
+copy `hkapp.aar` to `./android/app/libs`:
+
+```text
+mkdir ./android/app/libs
+cp ./hkapp.aar ./android/app/libs
+```
+
+then open android dir in AndroidStudio and run build.
 
