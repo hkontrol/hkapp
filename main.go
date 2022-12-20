@@ -132,7 +132,6 @@ func main() {
 					err := d.PairSetupAndVerify(ctx, "---", 5*time.Second)
 					if err != nil {
 						log.Println("pair-verify err: ", err)
-						d.Unpair()
 						return
 					}
 				}(dev)
