@@ -12,6 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "uHome"
+rootProject.name = "hkdroid"
 include ':app'
 
