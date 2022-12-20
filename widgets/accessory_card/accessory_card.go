@@ -121,10 +121,10 @@ func (s *AccessoryCard) Layout(gtx C) D {
 			CornerRadius: unit.Dp(3),
 		}.Layout(gtx, func(gtx C) D {
 			return layout.Inset{
-				Top:    4,
-				Bottom: 4,
-				Left:   4,
-				Right:  4,
+				Top:    8,
+				Bottom: 8,
+				Left:   8,
+				Right:  8,
 			}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{
 					Axis: layout.Vertical,
