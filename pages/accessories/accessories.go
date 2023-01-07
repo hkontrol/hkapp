@@ -7,6 +7,7 @@ import (
 	"hkapp/widgets"
 	"hkapp/widgets/accessory_card"
 	"hkapp/widgets/accessory_page"
+	"image/color"
 	"sync"
 	"time"
 
@@ -39,12 +40,27 @@ type Page struct {
 	accs  []DeviceAccPair
 	cards []*accessory_card.AccessoryCard
 
+	selectedAccTags []string
+	tagList         outlay.FlowWrap
+	tagCtxAreas     []component.ContextArea
+	tagCtxMenu      component.MenuState
+	// last index for which context menu was open
+	lastActiveTagIdx int
+
 	// clickable elements for cards
-	clickables []widgets.LongClickable
+	clickables    []widgets.LongClickable
+	tagClickables []widgets.LongClickable
+	tagInput      widget.Editor
+	addTagClick   widget.Clickable
+	tagSearchBtn  widget.Clickable
+	tagRemoveBtn  widget.Clickable
 
 	// for opened accessory
 	closeSelectedAcc     widget.Clickable
 	closeSelectedAccIcon widget.Clickable
+	accSettingsIcon      widget.Clickable
+
+	showSettings bool
 
 	// index of selected accessory
 	selectedAccIdx  int
@@ -102,7 +118,29 @@ func (p *Page) Update() {
 func (p *Page) Actions() []component.AppBarAction {
 	if p.selectedAccIdx > -1 {
 		return []component.AppBarAction{
-			component.SimpleIconAction(&p.closeSelectedAccIcon, icon.ExitIcon,
+			{
+				OverflowAction: component.OverflowAction{
+					Name: "Settigns",
+					Tag:  &p.accSettingsIcon,
+				},
+				Layout: func(gtx layout.Context, bg, fg color.NRGBA) layout.Dimensions {
+					for p.accSettingsIcon.Clicked() {
+						p.showSettings = !p.showSettings
+					}
+					btn := component.SimpleIconButton(bg, fg,
+						&p.accSettingsIcon, icon.SettingsIcon)
+					btn.Background = bg
+					if p.showSettings {
+						btn.Color = color.NRGBA{R: 200, A: 128}
+					} else {
+						btn.Color = fg
+					}
+					return btn.Layout(gtx)
+				},
+			},
+			component.SimpleIconAction(
+				&p.closeSelectedAccIcon,
+				icon.ExitIcon,
 				component.OverflowAction{
 					Name: "Close",
 					Tag:  &p.closeSelectedAccIcon,
@@ -132,10 +170,26 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		accdev := p.accs[i]
 		acc := accdev.Accessory
 		dev := accdev.Device
+
+		meta, err := p.App.Load(dev.Id, acc.Id)
+		if err == nil {
+			if tt, ok := meta["tags"]; ok {
+				p.selectedAccTags = tt
+			} else {
+				p.selectedAccTags = []string{}
+			}
+		} else {
+			p.selectedAccTags = []string{}
+		}
+		p.tagClickables = make([]widgets.LongClickable, len(p.selectedAccTags))
+		p.tagCtxAreas = make([]component.ContextArea, len(p.selectedAccTags))
+
 		p.selectedAccPage = accessory_page.NewAccessoryPage(p.App, acc, dev, p.th)
 		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
 			ap.SubscribeToEvents()
 		}
+		p.showSettings = false
+
 		p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
 		p.App.Window.Invalidate()
 	}
@@ -169,6 +223,60 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		p.App.Window.Invalidate()
 	}
 
+	for p.addTagClick.Clicked() {
+		t := p.tagInput.Text()
+		p.tagInput.SetText("")
+		if t == "" {
+			continue
+		}
+
+		found := false
+		for _, tt := range p.selectedAccTags {
+			if tt == t {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		p.selectedAccTags = append(p.selectedAccTags, t)
+		p.tagClickables = make([]widgets.LongClickable, len(p.selectedAccTags))
+		p.tagCtxAreas = make([]component.ContextArea, len(p.selectedAccTags))
+
+		meta := make(map[string][]string)
+		meta["tags"] = p.selectedAccTags
+		accdev := p.accs[p.selectedAccIdx]
+		acc := accdev.Accessory
+		dev := accdev.Device
+		p.App.Save(dev.Id, acc.Id, meta)
+	}
+
+	for i, ca := range p.tagCtxAreas {
+		if ca.Active() {
+			p.lastActiveTagIdx = i
+		}
+	}
+	for p.tagRemoveBtn.Clicked() {
+		i := p.lastActiveTagIdx
+
+		if len(p.selectedAccTags) == 1 {
+			p.selectedAccTags = []string{}
+		} else {
+			p.selectedAccTags = append(p.selectedAccTags[:i], p.selectedAccTags[i+1:]...)
+		}
+		p.tagClickables = make([]widgets.LongClickable, len(p.selectedAccTags))
+		p.tagCtxAreas = make([]component.ContextArea, len(p.selectedAccTags))
+
+		meta := make(map[string][]string)
+		meta["tags"] = p.selectedAccTags
+		accdev := p.accs[p.selectedAccIdx]
+		acc := accdev.Accessory
+		dev := accdev.Device
+		p.App.Save(dev.Id, acc.Id, meta)
+	}
+
 	if p.selectedAccIdx < 0 {
 
 		// all accessories
@@ -190,7 +298,6 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 								}
 
 								var children []layout.Widget
-								//w := accessory_card.NewAccessoryCard(p.App, acc, dev, &p.clickables[i], p.th).Layout
 								w := p.cards[i]
 								children = append(children, w.Layout)
 
@@ -213,20 +320,101 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 			Axis: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return (layout.Inset{Left: unit.Dp(6)}).Layout(gtx,
+				return layout.UniformInset(unit.Dp(6)).Layout(gtx,
 					func(gtx C) D {
 						p.List.Axis = layout.Vertical
-
 						listStyle := material.List(p.th, &p.List)
 
-						return listStyle.Layout(gtx, 3, func(gtx C, i int) D {
-							if i == 0 {
-								return p.selectedAccPage.Layout(gtx)
-							} else if i == 1 {
-								return layout.Spacer{Height: unit.Dp(25)}.Layout(gtx)
-							} else {
-								return material.Button(p.th, &p.closeSelectedAcc, "close").Layout(gtx)
+						p.tagList.Axis = layout.Horizontal
+
+						var content []layout.Widget
+
+						if p.showSettings {
+							getTagList := func(gtx C) D {
+								return layout.UniformInset(unit.Dp(4)).Layout(gtx, func(gtx C) D {
+									return p.tagList.Layout(gtx, len(p.selectedAccTags), func(gtx C, j int) D {
+										state := &p.tagCtxAreas[j]
+
+										p.tagCtxMenu = component.MenuState{
+											Options: []func(gtx C) D{
+												func(gtx C) D {
+													item := component.MenuItem(th, &p.tagSearchBtn, "Search")
+													item.Icon = icon.VisibilityIcon
+													item.Hint = component.MenuHintText(th, "")
+													return item.Layout(gtx)
+												},
+												func(gtx C) D {
+													item := component.MenuItem(th, &p.tagRemoveBtn, "Remove")
+													item.Icon = icon.EditIcon
+													item.Hint = component.MenuHintText(th, "")
+													return item.Layout(gtx)
+												},
+											},
+										}
+
+										return layout.Stack{}.Layout(gtx,
+											layout.Stacked(func(gtx C) D {
+												return layout.UniformInset(unit.Dp(2)).Layout(gtx, func(gtx C) D {
+													return material.Button(p.th,
+														&p.tagClickables[j].Clickable, p.selectedAccTags[j]).Layout(gtx)
+												})
+											}),
+											layout.Expanded(func(gtx C) D {
+												return state.Layout(gtx, func(gtx C) D {
+													gtx.Constraints.Min.X = 0
+													return component.Menu(th, &p.tagCtxMenu).Layout(gtx)
+												})
+											}),
+										)
+									})
+								})
 							}
+
+							getAddTagBtn := func(gtx C) D {
+								return widget.Border{
+									Color: color.NRGBA{A: 64},
+									Width: unit.Dp(1),
+								}.Layout(gtx, func(gtx C) D {
+									return layout.UniformInset(unit.Dp(4)).Layout(gtx, func(gtx C) D {
+										return layout.Flex{
+											Axis: layout.Horizontal,
+										}.Layout(gtx,
+											layout.Flexed(1, func(gtx C) D {
+												return material.Editor(p.th, &p.tagInput, "new tag").Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return material.Button(p.th, &p.addTagClick, "+tag").Layout(gtx)
+											}))
+									})
+								})
+							}
+
+							getTagSettingsWidget := func(gtx C) D {
+								return widget.Border{
+									Color: color.NRGBA{A: 64},
+									Width: unit.Dp(1),
+								}.Layout(gtx, func(gtx C) D {
+									return layout.UniformInset(unit.Dp(8)).Layout(gtx, func(gtx C) D {
+										return layout.Flex{
+											Axis: layout.Vertical,
+										}.Layout(gtx,
+											layout.Rigid(material.Body2(p.th, "tags").Layout),
+											layout.Rigid(getTagList),
+											layout.Rigid(getAddTagBtn),
+										)
+									})
+								})
+							}
+							content = append(content, getTagSettingsWidget)
+						} else {
+							content = append(content, p.selectedAccPage.Layout)
+						}
+
+						content = append(content, layout.Spacer{Height: unit.Dp(25)}.Layout)
+						content = append(content, material.Button(p.th, &p.closeSelectedAcc, "close").Layout)
+
+						return listStyle.Layout(gtx, len(content), func(gtx C, i int) D {
+							return content[i](gtx)
 						})
 					})
 			}),

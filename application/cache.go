@@ -1,20 +1,99 @@
 package application
 
-// AccessoryCache should serve to store accessories and associate metadata - tags (like room, etc)
-type AccessoryCache struct {
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"strings"
+
+	"github.com/hkontrol/hkontroller/log"
+)
+
+type accMetadata struct {
+	Device    string              `json:"device_id"`
+	Accessory uint64              `json:"accessory_id"`
+	Data      map[string][]string `json:"metadata"`
+}
+
+// AccessoryMetadataStore should store accessories metadata - tags (like room, etc)
+type AccessoryMetadataStore struct {
 	path string
 }
 
-func NewAccessoryCache(dir string) *AccessoryCache {
-	return &AccessoryCache{
+func NewAccessoryMetadataStore(dir string) *AccessoryMetadataStore {
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		log.Info.Panic(err)
+	}
+
+	return &AccessoryMetadataStore{
 		path: dir,
 	}
 }
 
-func (c *AccessoryCache) Save(deviceId string, aid uint64, tags map[string]struct{}) error {
-	return nil
+func (c *AccessoryMetadataStore) getPathForAcc(deviceId string, aid uint64) string {
+	dd := strings.Replace(deviceId, ":", "", -1)
+	filename := fmt.Sprintf("%s_%d.meta", dd, aid)
+	return path.Join(c.path, filename)
 }
 
-func (c *AccessoryCache) GetTags(deviceId string, aid uint64) map[string]struct{} {
-	return nil
+func (c *AccessoryMetadataStore) Save(deviceId string, aid uint64, metadata map[string][]string) error {
+
+	// load and merge
+	loaded, err := c.Load(deviceId, aid)
+	if err != nil {
+		loaded = make(map[string][]string)
+	}
+	for k, v := range metadata {
+		loaded[k] = v
+	}
+
+	data := accMetadata{
+		Device:    deviceId,
+		Accessory: aid,
+		Data:      loaded,
+	}
+	b, err := json.Marshal(&data)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(c.getPathForAcc(deviceId, aid), os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	_, err = file.Write(b)
+
+	return err
+}
+
+func (c *AccessoryMetadataStore) Load(deviceId string, aid uint64) (map[string][]string, error) {
+	file, err := os.OpenFile(c.getPathForAcc(deviceId, aid), os.O_RDONLY, 0666)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	all, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var data accMetadata
+	err = json.Unmarshal(all, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data.Data, nil
+}
+
+func (c *AccessoryMetadataStore) Remove(deviceId string, aid uint64) error {
+	return os.Remove(c.getPathForAcc(deviceId, aid))
 }

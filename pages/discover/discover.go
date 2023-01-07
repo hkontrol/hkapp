@@ -3,17 +3,19 @@ package discover
 import (
 	"context"
 	"fmt"
+	"hkapp/application"
+	"hkapp/icon"
+	page "hkapp/pages"
+	"image/color"
+	"log"
+	"time"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
 	"github.com/hkontrol/hkontroller"
-	"hkapp/application"
-	"hkapp/icon"
-	page "hkapp/pages"
-	"log"
-	"time"
 )
 
 type (
@@ -93,12 +95,14 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	if p.btnPair.Clicked() {
 		pin := p.pinInput.Text()
 		dev := p.devs[p.devSelected]
-		err := dev.PairSetupAndVerify(context.TODO(), pin, 5*time.Second)
-		if err != nil {
-			log.Println("pairErr: ", err)
-			_ = dev.Unpair()
-		}
-		p.Update()
+		go func() {
+			err := dev.PairSetupAndVerify(context.TODO(), pin, 5*time.Second)
+			if err != nil {
+				log.Println("pairErr: ", err)
+				_ = dev.Unpair()
+			}
+			p.Update()
+		}()
 	}
 	if p.btnUnpair.Clicked() {
 		dev := p.devs[p.devSelected]
@@ -139,88 +143,121 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 							stateStr = "verified"
 						} else if dev.IsPaired() && !dev.IsDiscovered() {
 							stateStr = "paired, not discovered"
+						} else if dev.IsPaired() && dev.IsDiscovered() && !dev.IsVerified() {
+							stateStr = "establishing encrypted session"
 						}
 						stateStyle := material.Label(th, unit.Sp(16), stateStr)
 
-						if p.devSelected < 0 || i != p.devSelected {
-							return material.Clickable(gtx, &p.devClicks[i], func(gtx layout.Context) layout.Dimensions {
-								return layout.Flex{
-									Axis: layout.Vertical,
-								}.Layout(gtx,
-									layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-										return nameStyle.Layout(gtx)
-									}),
-									layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-										return idStyle.Layout(gtx)
-									}),
-									layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-										return stateStyle.Layout(gtx)
-									}),
-								)
+						return layout.UniformInset(unit.Dp(4)).Layout(gtx,
+							func(gtx C) D {
+								return widget.Border{
+									Color: color.NRGBA{
+										R: 0,
+										G: 0,
+										B: 0,
+										A: 64,
+									},
+									Width:        unit.Dp(1),
+									CornerRadius: unit.Dp(3),
+								}.Layout(gtx, func(gtx C) D {
+									return layout.UniformInset(unit.Dp(8)).Layout(gtx,
+										func(gtx C) D {
+											if p.devSelected < 0 || i != p.devSelected {
+												return material.Clickable(gtx, &p.devClicks[i],
+													func(gtx layout.Context) layout.Dimensions {
+														return layout.Flex{
+															Axis: layout.Vertical,
+														}.Layout(gtx,
+															layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+																return nameStyle.Layout(gtx)
+															}),
+															layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+																return idStyle.Layout(gtx)
+															}),
+															layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+																return stateStyle.Layout(gtx)
+															}),
+														)
+													})
+											} else {
+												if !dev.IsPaired() && dev.IsDiscovered() {
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return p.pinInput.Layout(gtx, th, "pin")
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnPair, "pair").Layout(gtx)
+														}),
+													)
+												} else if dev.IsPaired() && dev.IsVerified() {
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Label(th, unit.Sp(16), "this one paired and verified").Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Label(th, unit.Sp(16), "encrypted session established").Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnUnpair, "unpair").Layout(gtx)
+														}),
+													)
+												} else if dev.IsPaired() && !dev.IsDiscovered() {
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Label(th, unit.Sp(16), "this one is paired but not discovered").Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)
+														}),
+													)
+												} else if dev.IsPaired() && dev.IsDiscovered() && !dev.IsVerified() {
+
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Label(th, unit.Sp(16), "trying to /pair-verify device").Layout(gtx)
+														}),
+													)
+												} else {
+													log.Println("wtf is discovered?", dev.IsDiscovered())
+													log.Println("wtf is paired?", dev.IsPaired())
+													log.Println("wtf is verified?", dev.IsVerified())
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Label(th, unit.Sp(16), "wtf?").Layout(gtx)
+														}),
+													)
+												}
+											}
+										})
+								})
 							})
-						} else {
-							if !dev.IsPaired() && dev.IsDiscovered() {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return p.pinInput.Layout(gtx, th, "pin")
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Button(th, &p.btnPair, "pair").Layout(gtx)
-									}),
-								)
-							} else if dev.IsPaired() && dev.IsVerified() {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Label(th, unit.Sp(16), "this one paired and verified").Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Label(th, unit.Sp(16), "encrypted session established").Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Button(th, &p.btnUnpair, "unpair").Layout(gtx)
-									}),
-								)
-							} else if dev.IsPaired() && !dev.IsDiscovered() {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Label(th, unit.Sp(16), "this one is paired but not discovered").Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)
-									}),
-								)
-							} else {
-								log.Println("wtf is discovered?", dev.IsDiscovered())
-								log.Println("wtf is paired?", dev.IsPaired())
-								log.Println("wtf is verified?", dev.IsVerified())
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return material.Label(th, unit.Sp(16), "wtf?").Layout(gtx)
-									}),
-								)
-							}
-						}
 					})
 				})
 		}),

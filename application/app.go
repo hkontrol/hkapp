@@ -2,6 +2,8 @@ package application
 
 import (
 	"fmt"
+	page "hkapp/pages"
+
 	"gioui.org/app"
 	"gioui.org/font/gofont"
 	"gioui.org/io/system"
@@ -10,13 +12,14 @@ import (
 	"gioui.org/widget/material"
 	"github.com/hkontrol/hkontroller"
 	"github.com/olebedev/emitter"
-	page "hkapp/pages"
 )
 
 type App struct {
 	Manager *hkontroller.Controller
 	Window  *app.Window
 	Router  *page.Router
+
+	*AccessoryMetadataStore
 
 	*material.Theme
 
@@ -27,10 +30,11 @@ type App struct {
 
 func NewApp(controller *hkontroller.Controller, window *app.Window, router *page.Router) *App {
 	return &App{
-		Manager: controller,
-		Window:  window,
-		Router:  router,
-		Theme:   material.NewTheme(gofont.Collection()),
+		Manager:                controller,
+		Window:                 window,
+		Router:                 router,
+		Theme:                  material.NewTheme(gofont.Collection()),
+		AccessoryMetadataStore: NewAccessoryMetadataStore("./.settings/accmetadata"),
 
 		ee: emitter.Emitter{},
 	}
