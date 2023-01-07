@@ -130,7 +130,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 					return listStyle.Layout(gtx, len(p.devs), func(gtx C, i int) D {
 						dev := p.devs[i]
 
-						nameStr := fmt.Sprintf("%s", dev.FriendlyName)
+						nameStr := fmt.Sprintf("%s", dev.Name)
 						nameStyle := material.Label(th, unit.Sp(20), nameStr)
 						idStr := fmt.Sprintf("%s", dev.Id)
 						idStyle := material.Label(th, unit.Sp(16), idStr)

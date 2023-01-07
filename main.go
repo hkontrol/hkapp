@@ -96,7 +96,7 @@ func main() {
 
 				go func(d *hkontroller.Device) {
 					for range dev.OnVerified() {
-						fmt.Println("dev onverified ", dev.FriendlyName)
+						fmt.Println("dev onverified ", dev.Name)
 						err := dev.GetAccessories()
 						if err == nil {
 							updatePages()
@@ -107,21 +107,21 @@ func main() {
 				}(dev)
 				go func(d *hkontroller.Device) {
 					for range dev.OnClose() {
-						fmt.Println("dev onclose ", dev.FriendlyName)
+						fmt.Println("dev onclose ", dev.Name)
 						updatePages()
 						w.Invalidate()
 					}
 				}(dev)
 				go func(d *hkontroller.Device) {
 					for range dev.OnLost() {
-						fmt.Println("dev onlost ", dev.FriendlyName)
+						fmt.Println("dev onlost ", dev.Name)
 						updatePages()
 						w.Invalidate()
 					}
 				}(dev)
 				go func(d *hkontroller.Device) {
 					for range dev.OnUnpaired() {
-						fmt.Println("dev onunpaired ", dev.FriendlyName)
+						fmt.Println("dev onunpaired ", dev.Name)
 						updatePages()
 						w.Invalidate()
 					}
