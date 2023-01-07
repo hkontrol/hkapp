@@ -52,7 +52,7 @@ func main() {
 
 	router := page.NewRouter()
 
-	myapp := application.NewApp(hk, w, router)
+	myapp := application.NewApp(hk, w, router, dd)
 	myapp.Window.Invalidate()
 
 	discoverPage := discover.New(myapp)

@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	page "hkapp/pages"
+	"path"
 
 	"gioui.org/app"
 	"gioui.org/font/gofont"
@@ -28,13 +29,13 @@ type App struct {
 	ee emitter.Emitter
 }
 
-func NewApp(controller *hkontroller.Controller, window *app.Window, router *page.Router) *App {
+func NewApp(controller *hkontroller.Controller, window *app.Window, router *page.Router, settingsDir string) *App {
 	return &App{
 		Manager:                controller,
 		Window:                 window,
 		Router:                 router,
 		Theme:                  material.NewTheme(gofont.Collection()),
-		AccessoryMetadataStore: NewAccessoryMetadataStore("./.settings/accmetadata"),
+		AccessoryMetadataStore: NewAccessoryMetadataStore(path.Join(settingsDir, "accmeta")),
 
 		ee: emitter.Emitter{},
 	}
