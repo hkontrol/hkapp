@@ -35,7 +35,7 @@ func NewApp(controller *hkontroller.Controller, window *app.Window, router *page
 		Window:                 window,
 		Router:                 router,
 		Theme:                  material.NewTheme(gofont.Collection()),
-		AccessoryMetadataStore: NewAccessoryMetadataStore(path.Join(settingsDir, "accmeta")),
+		AccessoryMetadataStore: NewAccessoryMetadataStore(path.Join(settingsDir, "hkapp", "metadata")),
 
 		ee: emitter.Emitter{},
 	}

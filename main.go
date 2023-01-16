@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	storePath := path.Join(dd, "hkstore")
+	storePath := path.Join(dd, "hkapp", "controller")
 
 	fmt.Println("store path: ", storePath)
 
