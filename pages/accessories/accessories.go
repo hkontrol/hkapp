@@ -48,6 +48,10 @@ type Page struct {
 	// last index for which context menu was open
 	lastActiveTagIdx int
 
+	selectedTag      string
+	lastSelectedTag  string
+	clearSelectedTag widget.Clickable
+
 	// clickable elements for cards
 	clickables    []widgets.LongClickable
 	tagClickables []widget.Clickable
@@ -107,19 +111,63 @@ func New(app *application.App) *Page {
 var _ page.Page = &Page{}
 
 func (p *Page) Update() {
-	devices := p.App.Manager.GetVerifiedDevices()
+	for i := range p.cards {
+		p.cards[i].UnsubscribeFromEvents()
+	}
+	if p.selectedTag == "" {
+		devices := p.App.Manager.GetVerifiedDevices()
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
+		p.mu.Lock()
+		defer p.mu.Unlock()
 
-	p.accs = []DeviceAccPair{}
-	p.clickables = []widgets.LongClickable{}
-	p.cards = []*accessory_card.AccessoryCard{}
+		p.accs = []DeviceAccPair{}
+		p.clickables = []widgets.LongClickable{}
+		p.cards = []*accessory_card.AccessoryCard{}
 
-	for _, d := range devices {
-		accs := d.Accessories()
-		for _, a := range accs {
-			p.accs = append(p.accs, DeviceAccPair{Device: d, Accessory: a})
+		for _, d := range devices {
+			accs := d.Accessories()
+			for _, a := range accs {
+				p.accs = append(
+					p.accs,
+					DeviceAccPair{
+						Device:    d,
+						Accessory: a,
+					})
+			}
+		}
+	} else {
+		devices := p.App.Manager.GetVerifiedDevices()
+
+		p.mu.Lock()
+		defer p.mu.Unlock()
+
+		p.accs = []DeviceAccPair{}
+		p.clickables = []widgets.LongClickable{}
+		p.cards = []*accessory_card.AccessoryCard{}
+
+		for _, d := range devices {
+			accs := d.Accessories()
+			for _, a := range accs {
+				meta, err := p.App.Load(d.Id, a.Id)
+				if err == nil {
+					if tt, ok := meta["tags"]; ok {
+						for _, t := range tt {
+							if t == p.selectedTag {
+								p.accs = append(
+									p.accs,
+									DeviceAccPair{
+										Device:    d,
+										Accessory: a,
+									})
+							}
+						}
+					} else {
+						p.selectedAccTags = []string{}
+					}
+				} else {
+					continue
+				}
+			}
 		}
 	}
 	p.clickables = make([]widgets.LongClickable, len(p.accs))
@@ -138,7 +186,7 @@ func (p *Page) Actions() []component.AppBarAction {
 		return []component.AppBarAction{
 			{
 				OverflowAction: component.OverflowAction{
-					Name: "Settigns",
+					Name: "Settings",
 					Tag:  &p.accSettingsIcon,
 				},
 				Layout: func(gtx layout.Context, bg, fg color.NRGBA) layout.Dimensions {
@@ -166,7 +214,24 @@ func (p *Page) Actions() []component.AppBarAction {
 			),
 		}
 	} else {
-		return []component.AppBarAction{}
+		{
+		}
+		if p.selectedTag == "" {
+			return []component.AppBarAction{}
+		} else {
+			return []component.AppBarAction{
+				{
+					OverflowAction: component.OverflowAction{
+						Name: "Clear",
+						Tag:  &p.clearSelectedTag,
+					},
+					Layout: func(gtx layout.Context, bg, fg color.NRGBA) layout.Dimensions {
+						return material.Button(p.th,
+							&p.clearSelectedTag, p.selectedTag).Layout(gtx)
+					},
+				},
+			}
+		}
 	}
 }
 
@@ -239,9 +304,27 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
 			ap.UnsubscribeFromEvents()
 		}
+		p.selectedAccTags = []string{}
+		p.tagClickables = []widget.Clickable{}
 		p.selectedAccPage = nil
 		p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
 		p.App.Window.Invalidate()
+	}
+
+	for p.clearSelectedTag.Clicked() {
+		p.selectedTag = ""
+		p.lastSelectedTag = ""
+		p.showSettings = false
+		p.selectedAccIdx = -1
+
+		if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
+			ap.UnsubscribeFromEvents()
+		}
+		p.selectedAccPage = nil
+		p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
+
+		p.Update()
+		p.Window.Invalidate()
 	}
 
 	for p.addTagClick.Clicked() {
@@ -277,11 +360,6 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		p.App.Save(dev.Id, acc.Id, meta)
 	}
 
-	for i, tc := range p.tagClickables {
-		for tc.Clicked() {
-			fmt.Println("clicked tag: ", p.selectedAccTags[i])
-		}
-	}
 	for p.tagRemoveBtn.Clicked() {
 		i := p.lastActiveTagIdx
 
@@ -304,13 +382,46 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		p.App.Save(dev.Id, acc.Id, meta)
 	}
 
-	for p.tagRemoveBtn.Clicked() {
+	onTagSelected := func(tag string) {
+		if p.lastSelectedTag == tag {
+			return
+		}
+		p.lastSelectedTag = tag
+		{ // close accessory page
+			p.selectedAccTags = []string{}
+			p.tagClickables = []widget.Clickable{}
+			p.selectedAccIdx = -1
+			p.showSettings = false
+			if ap, ok := p.selectedAccPage.(*accessory_page.AccessoryPage); ok {
+				ap.UnsubscribeFromEvents()
+			}
+			p.selectedAccPage = nil
+		}
+		p.App.Router.AppBar.SetActions(p.Actions(), p.Overflow())
+		p.Update()
+		p.Window.Invalidate()
+	}
+	for i, tc := range p.tagClickables {
+		for tc.Clicked() {
+			fmt.Println("clicked tag: ", p.selectedAccTags[i])
+			p.selectedTag = p.selectedAccTags[i]
+		}
+	}
+	for p.tagSearchBtn.Clicked() {
 		i := p.lastActiveTagIdx
 		if i >= len(p.selectedAccTags) && i < 0 {
 			continue
 		}
-		tag := p.selectedAccTags[i]
-		_ = tag // TODO search
+		p.selectedTag = p.selectedAccTags[i]
+	}
+	if p.selectedTag != "" {
+		onTagSelected(p.selectedTag)
+	}
+
+	for i, ca := range p.tagCtxAreas {
+		if ca.Active() {
+			p.lastActiveTagIdx = i
+		}
 	}
 
 	if p.selectedAccIdx < 0 {

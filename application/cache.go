@@ -11,7 +11,7 @@ import (
 	"github.com/hkontrol/hkontroller/log"
 )
 
-type accMetadata struct {
+type AccMetadata struct {
 	Device    string              `json:"device_id"`
 	Accessory uint64              `json:"accessory_id"`
 	Data      map[string][]string `json:"metadata"`
@@ -50,7 +50,7 @@ func (c *AccessoryMetadataStore) Save(deviceId string, aid uint64, metadata map[
 		loaded[k] = v
 	}
 
-	data := accMetadata{
+	data := AccMetadata{
 		Device:    deviceId,
 		Accessory: aid,
 		Data:      loaded,
@@ -85,13 +85,45 @@ func (c *AccessoryMetadataStore) Load(deviceId string, aid uint64) (map[string][
 		return nil, err
 	}
 
-	var data accMetadata
+	var data AccMetadata
 	err = json.Unmarshal(all, &data)
 	if err != nil {
 		return nil, err
 	}
 
 	return data.Data, nil
+}
+
+func (c *AccessoryMetadataStore) GetAll() []AccMetadata {
+	files, err := os.ReadDir(c.path)
+	if err != nil {
+		return nil
+	}
+	var res []AccMetadata
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		file, err := os.OpenFile(path.Join(c.path, f.Name()), os.O_RDONLY, 0666)
+		if err != nil {
+			return nil
+		}
+
+		defer file.Close()
+
+		all, err := io.ReadAll(file)
+		if err != nil {
+			return nil
+		}
+
+		var data AccMetadata
+		err = json.Unmarshal(all, &data)
+		if err != nil {
+			return nil
+		}
+		res = append(res, data)
+	}
+	return res
 }
 
 func (c *AccessoryMetadataStore) Remove(deviceId string, aid uint64) error {
