@@ -120,10 +120,16 @@ func (p *Page) Update() {
 		p.mu.Lock()
 		defer p.mu.Unlock()
 
+		var selectedAcc *DeviceAccPair
+		if p.selectedAccIdx > -1 && p.selectedAccIdx < len(p.accs) {
+			selectedAcc = &p.accs[p.selectedAccIdx]
+		}
+
 		p.accs = []DeviceAccPair{}
 		p.clickables = []widgets.LongClickable{}
 		p.cards = []*accessory_card.AccessoryCard{}
 
+		var openedAccFound bool
 		for _, d := range devices {
 			accs := d.Accessories()
 			for _, a := range accs {
@@ -133,7 +139,16 @@ func (p *Page) Update() {
 						Device:    d,
 						Accessory: a,
 					})
+				if selectedAcc != nil {
+					if selectedAcc.Device.Name == d.Name &&
+						selectedAcc.Accessory.Id == a.Id {
+						openedAccFound = true
+					}
+				}
 			}
+		}
+		if !openedAccFound {
+			p.closeSelectedAcc.Click()
 		}
 	} else {
 		devices := p.App.Manager.GetVerifiedDevices()
