@@ -198,12 +198,14 @@ func (l *LightBulb) QuickAction() {
 func (l *LightBulb) onBoolValueChanged() error {
 
 	chr := l.chars[hkontroller.CType_On]
-	err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, l.on.Value)
-	if err != nil {
-		return err
-	}
+	go func() {
+		err := l.dev.PutCharacteristic(l.acc.Id, chr.Iid, l.on.Value)
+		if err != nil {
+			return
+		}
 
-	l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.on.Value)
+		l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.on.Value)
+	}()
 
 	return nil
 }
@@ -214,8 +216,10 @@ func (l *LightBulb) onBrightnessSlider() error {
 	l.dragTimer = time.AfterFunc(brightnessDragDelay, func() {
 		chr := l.chars[hkontroller.CType_Brightness]
 		val := math.Floor(float64(l.brightnessWidget.Value))
-		l.dev.PutCharacteristic(l.acc.Id, chr.Iid, val)
-		l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
+		go func() {
+			l.dev.PutCharacteristic(l.acc.Id, chr.Iid, val)
+			l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
+		}()
 	})
 
 	return nil

@@ -269,22 +269,26 @@ func (t *Thermostat) Layout(gtx C) D {
 			// one digit after point
 			val = math.Floor(val*10) / 10
 			ctype := hkontroller.CType_TargetTemperature
-			err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, float32(val))
-			if err != nil {
-				return
-			}
-			t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, float32(val))
+			go func() {
+				err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, float32(val))
+				if err != nil {
+					return
+				}
+				t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, float32(val))
+			}()
 		})
 	}
 	for t.targetModeEnum.Changed() {
 		valStr := t.targetModeEnum.Value
 		valNum := targetMode2num(valStr)
 		ctype := hkontroller.CType_TargetHeatingCoolingState
-		err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, valNum)
-		if err != nil {
-			return D{}
-		}
-		t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, valNum)
+		go func() {
+			err := t.dev.PutCharacteristic(t.acc.Id, t.chars[ctype].Iid, valNum)
+			if err != nil {
+				return
+			}
+			t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, valNum)
+		}()
 	}
 
 	ctemp := t.chars[hkontroller.CType_CurrentTemperature].Value

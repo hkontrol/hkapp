@@ -173,12 +173,14 @@ func (s *Switch) onBoolValueChanged() error {
 		return errors.New("cannot find On characteristic")
 	}
 
-	err := s.dev.PutCharacteristic(s.acc.Id, chr.Iid, s.on.Value)
-	if err != nil {
-		return err
-	}
+	go func() {
+		err := s.dev.PutCharacteristic(s.acc.Id, chr.Iid, s.on.Value)
+		if err != nil {
+			return
+		}
 
-	s.App.EmitValueChange(s.dev.Id, s.acc.Id, chr.Iid, s.on.Value)
+		s.App.EmitValueChange(s.dev.Id, s.acc.Id, chr.Iid, s.on.Value)
+	}()
 
 	return nil
 }
