@@ -111,14 +111,13 @@ func New(app *application.App) *Page {
 var _ page.Page = &Page{}
 
 func (p *Page) Update() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	for i := range p.cards {
 		p.cards[i].UnsubscribeFromEvents()
 	}
 	if p.selectedTag == "" {
 		devices := p.App.Manager.GetVerifiedDevices()
-
-		p.mu.Lock()
-		defer p.mu.Unlock()
 
 		var selectedAcc *DeviceAccPair
 		if p.selectedAccIdx > -1 && p.selectedAccIdx < len(p.accs) {
@@ -152,9 +151,6 @@ func (p *Page) Update() {
 		}
 	} else {
 		devices := p.App.Manager.GetVerifiedDevices()
-
-		p.mu.Lock()
-		defer p.mu.Unlock()
 
 		p.accs = []DeviceAccPair{}
 		p.clickables = []widgets.LongClickable{}
