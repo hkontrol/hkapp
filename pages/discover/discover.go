@@ -33,9 +33,10 @@ type Page struct {
 	devSelected int
 	pinInput    component.TextField
 	btnPair     widget.Clickable
+	btnVerify   widget.Clickable
 	btnUnpair   widget.Clickable
-	//btnVerify   widget.Clickable
-	pairErr error
+	btnCancel   widget.Clickable
+	pairErr     error
 
 	*application.App
 }
@@ -99,7 +100,16 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 			err := dev.PairSetupAndVerify(context.TODO(), pin, 5*time.Second)
 			if err != nil {
 				log.Println("pairErr: ", err)
-				_ = dev.Unpair()
+			}
+			p.Update()
+		}()
+	}
+	if p.btnVerify.Clicked() {
+		dev := p.devs[p.devSelected]
+		go func() {
+			err := dev.PairSetupAndVerify(context.TODO(), "", 5*time.Second)
+			if err != nil {
+				log.Println("verifyErr: ", err)
 			}
 			p.Update()
 		}()
@@ -109,15 +119,11 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		_ = dev.Unpair()
 		p.Update()
 	}
-	//if p.btnVerify.Clicked() {
-	//	dev := p.devs[p.devSelected]
-	//	log.Println("btnVerify: ", dev.Id)
-	//	err := dev.PairVerify()
-	//	if err != nil {
-	//		_ = dev.Unpair()
-	//	}
-	//	p.Update()
-	//}
+	if p.btnCancel.Clicked() {
+		dev := p.devs[p.devSelected]
+		dev.CancelPersistConnection()
+		p.Update()
+	}
 
 	return layout.Flex{
 		Axis: layout.Vertical,
@@ -143,8 +149,10 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 							stateStr = "verified"
 						} else if dev.IsPaired() && !dev.IsDiscovered() {
 							stateStr = "paired, not discovered"
-						} else if dev.IsPaired() && dev.IsDiscovered() && !dev.IsVerified() {
+						} else if dev.IsPaired() && dev.IsDiscovered() && dev.IsVerifying() {
 							stateStr = "establishing encrypted session"
+						} else if dev.CloseReason() != nil {
+							stateStr = dev.CloseReason().Error()
 						}
 						stateStyle := material.Label(th, unit.Sp(16), stateStr)
 
@@ -225,7 +233,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 															return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)
 														}),
 													)
-												} else if dev.IsPaired() && dev.IsDiscovered() && !dev.IsVerified() {
+												} else if dev.IsPaired() && dev.IsDiscovered() && dev.IsVerifying() && !dev.IsVerified() {
 
 													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
@@ -236,6 +244,30 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 														}),
 														layout.Rigid(func(gtx C) D {
 															return material.Label(th, unit.Sp(16), "trying to /pair-verify device").Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnCancel, "cancel").Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)
+														}),
+													)
+												} else if dev.CloseReason() != nil {
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Label(th, unit.Sp(16), dev.CloseReason().Error()).Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnVerify, "pair-verify").Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)
 														}),
 													)
 												} else {
