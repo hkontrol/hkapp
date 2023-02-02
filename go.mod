@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	gioui.org v0.0.0-20230128030432-db6b4de0f71b
-	gioui.org/x v0.0.0-20221229102800-fabadb41b212
-	github.com/hkontrol/hkontroller v0.0.0-20230131222403-4511796732b2
+	gioui.org/x v0.0.0-20230201210254-e4e582af919b
+	github.com/hkontrol/hkontroller v0.0.0-20230202132928-eb8f1d51a2db
 	github.com/olebedev/emitter v0.0.0-20190110104742-e8d1457e6aee
 	golang.org/x/exp/shiny v0.0.0-20230131160201-f062dba9d201
 )
@@ -16,7 +16,7 @@ require (
 	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/brutella/dnssd v1.2.5 // indirect
 	github.com/gioui/uax v0.2.1-0.20220819135011-cda973fac06d // indirect
-	github.com/go-text/typesetting v0.0.0-20230122153906-bd3bf1820a88 // indirect
+	github.com/go-text/typesetting v0.0.0-20230202072710-f146dbf91585 // indirect
 	github.com/miekg/dns v1.1.50 // indirect
 	github.com/tadglines/go-pkgs v0.0.0-20210623144937-b983b20f54f9 // indirect
 	github.com/xiam/to v0.0.0-20200126224905-d60d31e03561 // indirect

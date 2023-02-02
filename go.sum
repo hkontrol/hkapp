@@ -20,6 +20,8 @@ gioui.org/x v0.0.0-20221219202300-e2d994f107e4 h1:dyZnD4qeTmgTwnpGl10n48BDKpqbgh
 gioui.org/x v0.0.0-20221219202300-e2d994f107e4/go.mod h1:iDe/I0R+np8IX+aUR5oNlyCLQeVyMxjHZTeTHrMyBIo=
 gioui.org/x v0.0.0-20221229102800-fabadb41b212 h1:Ukv5MBxtCuM18hUea7/Jj9KfaIbKF5BkcCw8NN3xAEs=
 gioui.org/x v0.0.0-20221229102800-fabadb41b212/go.mod h1:kmHRtak7XgGZYYuqFgDBJ42PbQjPrV/xOpw9FLx3eVY=
+gioui.org/x v0.0.0-20230201210254-e4e582af919b h1:0UZeCx641m+2dj4t3OTQqXfeLHqtEnr5g3Q3edkU6aQ=
+gioui.org/x v0.0.0-20230201210254-e4e582af919b/go.mod h1:kmHRtak7XgGZYYuqFgDBJ42PbQjPrV/xOpw9FLx3eVY=
 github.com/benoitkugler/pstokenizer v1.0.0/go.mod h1:l1G2Voirz0q/jj0TQfabNxVsa8HZXh/VMxFSRALWTiE=
 github.com/benoitkugler/textlayout v0.0.5/go.mod h1:puH4v13Uz7uIhIH0XMk5jgc8U3MXcn5r3VlV9K8n0D8=
 github.com/benoitkugler/textlayout v0.1.3 h1:Jv0E28xDkke3KrWle90yOLtBmZsUqXLBy70lZRfbKN0=
@@ -44,6 +46,8 @@ github.com/go-text/typesetting v0.0.0-20230104230035-6cdafd18ca27 h1:Z8rWsiOWCJo
 github.com/go-text/typesetting v0.0.0-20230104230035-6cdafd18ca27/go.mod h1:/cmOXaoTiO+lbCwkTZBgCvevJpbFsZ5reXIpEJVh5MI=
 github.com/go-text/typesetting v0.0.0-20230122153906-bd3bf1820a88 h1:y0CNR3NsQ4yAW+27dN8OsWf4Xb//ow5mOdLxE+nJwwE=
 github.com/go-text/typesetting v0.0.0-20230122153906-bd3bf1820a88/go.mod h1:ikE0VZ176HwF4MATfNU9wO7CZzYlL9q/D4m9mWLwEpw=
+github.com/go-text/typesetting v0.0.0-20230202072710-f146dbf91585 h1:/KxAfLnXm9IK19Iojh1ng3njraY06UggpjPwcaHDFWU=
+github.com/go-text/typesetting v0.0.0-20230202072710-f146dbf91585/go.mod h1:pryFoxPu+RU9GDoqsk3qyLPZ/iDpwD0uSpgl2jaLABo=
 github.com/go-text/typesetting-utils v0.0.0-20230107101729-1c4f3b1a9164/go.mod h1:4pzmHTT9aFGtMdEfGT39FbNRVn/uKkCtQnxCwBT4T4s=
 github.com/hkontrol/hkontroller v0.0.0-20221117194910-4eab0c54d7e7 h1:VTMit0GFL8bqUE0nRTwk3Pr8ABAlMUjdGfCZIKWBnlk=
 github.com/hkontrol/hkontroller v0.0.0-20221117194910-4eab0c54d7e7/go.mod h1:dXYxg9OLOTnMVBcGtbJ70WJJ02YJ2jwsLm41UZCAuCM=
@@ -53,6 +57,10 @@ github.com/hkontrol/hkontroller v0.0.0-20230114203000-2186ab9d2704 h1:2FX9NqU7sc
 github.com/hkontrol/hkontroller v0.0.0-20230114203000-2186ab9d2704/go.mod h1:2Stnh+aI4QPiv1qFQDyQD/8kU+UtiaJ3kEpQdxIdohM=
 github.com/hkontrol/hkontroller v0.0.0-20230131222403-4511796732b2 h1:twCOrEChx3e9yOPZVzB3tDgJz/eNxmz3Qv4iDcL9Y/w=
 github.com/hkontrol/hkontroller v0.0.0-20230131222403-4511796732b2/go.mod h1:VBxo6acCJEqX/CrwNgOfmS9nK5ShkNG5JIgR29Dj/p8=
+github.com/hkontrol/hkontroller v0.0.0-20230201083104-1da0b5bf5c02 h1:42qRN6ApKsv5f306ySTWhJ/YD/HzmqZ2vO/EOamA/Uk=
+github.com/hkontrol/hkontroller v0.0.0-20230201083104-1da0b5bf5c02/go.mod h1:VBxo6acCJEqX/CrwNgOfmS9nK5ShkNG5JIgR29Dj/p8=
+github.com/hkontrol/hkontroller v0.0.0-20230202132928-eb8f1d51a2db h1:c8vYnbykMCGdEA2MxTtK+pgUAqKxxKpN00XpdSs0UBA=
+github.com/hkontrol/hkontroller v0.0.0-20230202132928-eb8f1d51a2db/go.mod h1:VBxo6acCJEqX/CrwNgOfmS9nK5ShkNG5JIgR29Dj/p8=
 github.com/miekg/dns v1.1.50 h1:DQUfb9uc6smULcREF09Uc+/Gd46YWqJd5DbpPE9xkcA=
 github.com/miekg/dns v1.1.50/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
 github.com/olebedev/emitter v0.0.0-20190110104742-e8d1457e6aee h1:IquUs3fIykn10zWDIyddanhpTqBvAHMaPnFhQuyYw5U=

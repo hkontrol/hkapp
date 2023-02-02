@@ -78,7 +78,7 @@ func main() {
 	mu := sync.Mutex{}
 	devs := make(map[string]struct{}) // to store already discovered accs
 
-	discoCh, lostCh := hk.StartDiscovering()
+	discoCh, lostCh := hk.StartDiscovery()
 
 	go func() {
 		for dev := range discoCh {
