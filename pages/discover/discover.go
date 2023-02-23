@@ -138,7 +138,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 
 						nameStr := fmt.Sprintf("%s", dev.Name)
 						nameStyle := material.Label(th, unit.Sp(20), nameStr)
-						idStr := fmt.Sprintf("%s", dev.Id)
+						idStr := fmt.Sprintf("%s", dev.Name)
 						idStyle := material.Label(th, unit.Sp(16), idStr)
 						idStyle.Font.Variant = "Mono"
 
@@ -149,8 +149,6 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 							stateStr = "verified"
 						} else if dev.IsPaired() && !dev.IsDiscovered() {
 							stateStr = "paired, not discovered"
-						} else if dev.IsPaired() && dev.IsDiscovered() && dev.IsVerifying() {
-							stateStr = "establishing encrypted session"
 						} else if dev.CloseReason() != nil {
 							stateStr = dev.CloseReason().Error()
 						}
@@ -228,25 +226,6 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 														}),
 														layout.Rigid(func(gtx C) D {
 															return material.Label(th, unit.Sp(16), "this one is paired but not discovered").Layout(gtx)
-														}),
-														layout.Rigid(func(gtx C) D {
-															return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)
-														}),
-													)
-												} else if dev.IsPaired() && dev.IsDiscovered() && dev.IsVerifying() && !dev.IsVerified() {
-
-													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-														layout.Rigid(func(gtx C) D {
-															return material.Clickable(gtx, &p.devClicks[i], nameStyle.Layout)
-														}),
-														layout.Rigid(func(gtx C) D {
-															return material.Clickable(gtx, &p.devClicks[i], idStyle.Layout)
-														}),
-														layout.Rigid(func(gtx C) D {
-															return material.Label(th, unit.Sp(16), "trying to /pair-verify device").Layout(gtx)
-														}),
-														layout.Rigid(func(gtx C) D {
-															return material.Button(th, &p.btnCancel, "cancel").Layout(gtx)
 														}),
 														layout.Rigid(func(gtx C) D {
 															return material.Button(th, &p.btnUnpair, "unpair, take care").Layout(gtx)

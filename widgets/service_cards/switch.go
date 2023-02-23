@@ -134,7 +134,7 @@ func (s *Switch) SubscribeToEvents() {
 	}(events)
 
 	// hapEvents from GUI
-	vals := s.App.OnValueChange(s.dev.Id, s.acc.Id, onC.Iid)
+	vals := s.App.OnValueChange(s.dev.Name, s.acc.Id, onC.Iid)
 	s.guiEvents = vals
 	go func(evs <-chan emitter.Event) {
 		for e := range evs {
@@ -154,7 +154,7 @@ func (s *Switch) UnsubscribeFromEvents() {
 	}
 
 	s.dev.UnsubscribeFromEvents(s.acc.Id, onC.Iid, s.hapEvents)
-	s.App.OffValueChange(s.dev.Id, s.acc.Id, onC.Iid, s.guiEvents)
+	s.App.OffValueChange(s.dev.Name, s.acc.Id, onC.Iid, s.guiEvents)
 }
 
 func (s *Switch) QuickAction() {
@@ -179,7 +179,7 @@ func (s *Switch) onBoolValueChanged() error {
 			return
 		}
 
-		s.App.EmitValueChange(s.dev.Id, s.acc.Id, chr.Iid, s.on.Value)
+		s.App.EmitValueChange(s.dev.Name, s.acc.Id, chr.Iid, s.on.Value)
 	}()
 
 	return nil

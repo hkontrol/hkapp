@@ -159,7 +159,7 @@ func (p *Page) Update() {
 		for _, d := range devices {
 			accs := d.Accessories()
 			for _, a := range accs {
-				meta, err := p.App.Load(d.Id, a.Id)
+				meta, err := p.App.Load(d.Name, a.Id)
 				if err == nil {
 					if tt, ok := meta["tags"]; ok {
 						for _, t := range tt {
@@ -263,7 +263,7 @@ func (p *Page) openAccPage(i int) {
 	acc := accdev.Accessory
 	dev := accdev.Device
 
-	meta, err := p.App.Load(dev.Id, acc.Id)
+	meta, err := p.App.Load(dev.Name, acc.Id)
 	if err == nil {
 		if tt, ok := meta["tags"]; ok {
 			p.selectedAccTags = tt
@@ -368,7 +368,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		accdev := p.accs[p.selectedAccIdx]
 		acc := accdev.Accessory
 		dev := accdev.Device
-		p.App.Save(dev.Id, acc.Id, meta)
+		p.App.Save(dev.Name, acc.Id, meta)
 	}
 
 	for p.tagRemoveBtn.Clicked() {
@@ -390,7 +390,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		accdev := p.accs[p.selectedAccIdx]
 		acc := accdev.Accessory
 		dev := accdev.Device
-		p.App.Save(dev.Id, acc.Id, meta)
+		p.App.Save(dev.Name, acc.Id, meta)
 	}
 
 	onTagSelected := func(tag string) {

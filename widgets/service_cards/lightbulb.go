@@ -141,7 +141,7 @@ func (l *LightBulb) SubscribeToEvents() {
 
 	var err error
 	var ev <-chan emitter.Event
-	devId := l.dev.Id
+	devId := l.dev.Name
 	aid := l.acc.Id
 	onEvent := func(e emitter.Event, ctype hkontroller.HapCharacteristicType) {
 		value := e.Args[2]
@@ -173,7 +173,7 @@ func (l *LightBulb) SubscribeToEvents() {
 }
 func (l *LightBulb) UnsubscribeFromEvents() {
 	aid := l.acc.Id
-	devId := l.dev.Id
+	devId := l.dev.Name
 	for ctype, ee := range l.hapEvents {
 		iid := l.chars[ctype].Iid
 		err := l.dev.UnsubscribeFromEvents(aid, iid, ee)
@@ -204,7 +204,7 @@ func (l *LightBulb) onBoolValueChanged() error {
 			return
 		}
 
-		l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.on.Value)
+		l.App.EmitValueChange(l.dev.Name, l.acc.Id, chr.Iid, l.on.Value)
 	}()
 
 	return nil
@@ -218,7 +218,7 @@ func (l *LightBulb) onBrightnessSlider() error {
 		val := math.Floor(float64(l.brightnessWidget.Value))
 		go func() {
 			l.dev.PutCharacteristic(l.acc.Id, chr.Iid, val)
-			l.App.EmitValueChange(l.dev.Id, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
+			l.App.EmitValueChange(l.dev.Name, l.acc.Id, chr.Iid, l.brightnessWidget.Value)
 		}()
 	})
 

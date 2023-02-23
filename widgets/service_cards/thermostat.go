@@ -199,7 +199,7 @@ func (t *Thermostat) SubscribeToEvents() {
 
 	var err error
 	var ev <-chan emitter.Event
-	devId := t.dev.Id
+	devId := t.dev.Name
 	aid := t.acc.Id
 	onEvent := func(e emitter.Event, ctype hkontroller.HapCharacteristicType) {
 		value := e.Args[2]
@@ -234,7 +234,7 @@ func (t *Thermostat) SubscribeToEvents() {
 
 func (t *Thermostat) UnsubscribeFromEvents() {
 	aid := t.acc.Id
-	devId := t.dev.Id
+	devId := t.dev.Name
 	for ctype, ee := range t.hapEvents {
 		iid := t.chars[ctype].Iid
 		err := t.dev.UnsubscribeFromEvents(aid, iid, ee)
@@ -274,7 +274,7 @@ func (t *Thermostat) Layout(gtx C) D {
 				if err != nil {
 					return
 				}
-				t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, float32(val))
+				t.App.EmitValueChange(t.dev.Name, t.acc.Id, t.chars[ctype].Iid, float32(val))
 			}()
 		})
 	}
@@ -287,7 +287,7 @@ func (t *Thermostat) Layout(gtx C) D {
 			if err != nil {
 				return
 			}
-			t.App.EmitValueChange(t.dev.Id, t.acc.Id, t.chars[ctype].Iid, valNum)
+			t.App.EmitValueChange(t.dev.Name, t.acc.Id, t.chars[ctype].Iid, valNum)
 		}()
 	}
 

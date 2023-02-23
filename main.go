@@ -82,16 +82,16 @@ func main() {
 
 	go func() {
 		for dev := range discoCh {
-			fmt.Println("discovered: ", dev.Id)
+			fmt.Println("discovered: ", dev.Name)
 
 			mu.Lock()
-			_, ok := devs[dev.Id]
+			_, ok := devs[dev.Name]
 			mu.Unlock()
 
 			if !ok { // first discover
 				fmt.Println("first discover")
 				mu.Lock()
-				devs[dev.Id] = struct{}{}
+				devs[dev.Name] = struct{}{}
 				mu.Unlock()
 
 				go func(d *hkontroller.Device) {
@@ -151,7 +151,7 @@ func main() {
 			if !dev.IsPaired() {
 				log.Println("lost and not paired, delete from discovered")
 				mu.Lock()
-				delete(devs, dev.Id)
+				delete(devs, dev.Name)
 				mu.Unlock()
 			}
 			updatePages()
