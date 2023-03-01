@@ -1,21 +1,18 @@
 package discover
 
 import (
-	"context"
 	"fmt"
-	"hkapp/application"
-	"hkapp/icon"
-	page "hkapp/pages"
-	"image/color"
-	"log"
-	"time"
-
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
 	"github.com/hkontrol/hkontroller"
+	"hkapp/application"
+	"hkapp/icon"
+	page "hkapp/pages"
+	"image/color"
+	"log"
 )
 
 type (
@@ -97,7 +94,11 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 		pin := p.pinInput.Text()
 		dev := p.devs[p.devSelected]
 		go func() {
-			err := dev.PairSetupAndVerify(context.TODO(), pin, 5*time.Second)
+			err := dev.PairSetup(pin)
+			if err != nil {
+				log.Println("pairErr: ", err)
+			}
+			err = dev.PairVerify()
 			if err != nil {
 				log.Println("pairErr: ", err)
 			}
@@ -107,7 +108,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 	if p.btnVerify.Clicked() {
 		dev := p.devs[p.devSelected]
 		go func() {
-			err := dev.PairSetupAndVerify(context.TODO(), "", 5*time.Second)
+			err := dev.PairVerify()
 			if err != nil {
 				log.Println("verifyErr: ", err)
 			}

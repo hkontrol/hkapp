@@ -1,9 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
+	"gioui.org/app"
+	"gioui.org/layout"
+	"gioui.org/unit"
+	"github.com/hkontrol/hkontroller"
 	"hkapp/application"
 	page "hkapp/pages"
 	"hkapp/pages/accessories"
@@ -12,12 +15,6 @@ import (
 	"os"
 	"path"
 	"sync"
-	"time"
-
-	"gioui.org/app"
-	"gioui.org/layout"
-	"gioui.org/unit"
-	"github.com/hkontrol/hkontroller"
 )
 
 type (
@@ -133,8 +130,7 @@ func main() {
 			if dev.IsPaired() {
 				log.Println("already paired, establishing connection")
 				go func(d *hkontroller.Device) {
-					ctx := context.Background()
-					err := d.PairSetupAndVerify(ctx, "---", 5*time.Second)
+					err := d.PairVerify()
 					if err != nil {
 						log.Println("pair-verify err: ", err)
 						return
